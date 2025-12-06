@@ -1,7 +1,7 @@
 # gojet
 
-[![Go Version](https://img.shields.io/badge/go-1.23-blue.svg)](https://golang.org/)
-[![Gin Web Framework](https://img.shields.io/badge/gin-1.10-blue.svg)](https://github.com/gin-gonic/gin)
+[![Go Version](https://img.shields.io/badge/go-1.25.5-blue.svg)](https://golang.org/)
+[![Gin Web Framework](https://img.shields.io/badge/gin-1.11.0-blue.svg)](https://github.com/gin-gonic/gin)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，包含简单的用户管理 RESTful API。集成了完整的 API 架构、数据库操作、健康检查、日志记录和 Docker 支持，适合学习和快速构建 Web 应用。
@@ -21,8 +21,8 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，包含简单的�
 
 ## 技术栈
 
-- [Gin](https://github.com/gin-gonic/gin) v1.10.1 - HTTP Web 框架
-- [GORM](https://gorm.io) v1.25.12 - ORM 框架
+- [Gin](https://github.com/gin-gonic/gin) v1.11.0 - HTTP Web 框架
+- [GORM](https://gorm.io) v1.31.1 - ORM 框架
 - [PostgreSQL](https://www.postgresql.org/) - 关系型数据库
 - [Validator](https://github.com/go-playground/validator) v10 - 参数验证
 - [log/slog](https://pkg.go.dev/log/slog) - Go 标准库结构化日志
@@ -32,9 +32,9 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，包含简单的�
 
 ### 前置要求
 
-- Go 1.23 或更高版本
-- PostgreSQL 14+（可选，或使用 Docker）
-- Make（使用 Makefile 时需要）
+- Go 1.25.5 或更高版本
+- PostgreSQL 15+
+- Make
 
 ### 方式一：使用 Docker（推荐）
 
@@ -59,9 +59,6 @@ cd gojet
 
 # 安装依赖
 go mod download
-
-# 配置环境变量（复制 .env.example 并修改）
-cp .env.example .env
 
 # 运行应用
 go run main.go
