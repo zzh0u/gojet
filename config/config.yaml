@@ -1,0 +1,15 @@
+# 应用配置
+app:
+  name: "gojet"
+  version: "1.0.0"
+  port: 8080
+
+# 数据库配置
+database:
+  host: "localhost"
+  port: 5432
+  user: "zhou"
+  password: "p@ssw0rd_"
+  dbname: "gojet"
+  sslmode: "disable"
+  timezone: "Asia/Shanghai"
