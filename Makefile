@@ -7,7 +7,7 @@ LINT_VERSION := 2.7.1
 SWAG := $(GOBIN)/swag
 
 build:
-	@echo "正在编译Linux下可执行文件"
+	@echo "正在编译 Linux 下可执行文件"
 	@mkdir -p bin
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 	$(GO) build -ldflags '-extldflags "-static" -s -w' -o bin/$(BINARY_NAME)

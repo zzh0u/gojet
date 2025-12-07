@@ -1,47 +1,37 @@
 package service
 
 import (
-	"log/slog"
-
 	"gojet/models"
+	"log/slog"
 )
 
-// UserService handles business logic for users
+// UserService 用户服务
 type UserService struct {
 	userRepo UserRepository
-	logger   *slog.Logger
 }
 
-// NewUserService creates a new UserService
-func NewUserService(userRepo UserRepository, logger *slog.Logger) *UserService {
-	return &UserService{userRepo: userRepo, logger: logger}
+// NewUserService 创建用户服务实例
+func NewUserService(userRepo UserRepository) *UserService {
+	return &UserService{userRepo: userRepo}
 }
 
-// CreateUser creates a new user
+// CreateUser 创建新用户
 func (s *UserService) CreateUser(name string) (*models.User, error) {
-	s.logger.Info("Creating new user", "name", name)
-
 	user := &models.User{
 		Name: name,
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
-		s.logger.Error("Failed to create user", "error", err, "name", name)
+		slog.Error("创建用户失败", "用户", user)
 		return nil, err
 	}
-
-	s.logger.Info("User created successfully", "id", user.ID, "name", name)
 	return user, nil
 }
 
-// CreateInitialData creates initial student data
+// CreateInitialData 创建初始学生数据
 func (s *UserService) CreateInitialData() error {
-	s.logger.Info("Initializing sample student data")
-
-	// Check if data already exists
 	existingUsers, err := s.userRepo.GetAll()
 	if err == nil && len(existingUsers) > 0 {
-		s.logger.Info("Database already contains data, skipping initialization")
 		return nil
 	}
 
@@ -53,25 +43,22 @@ func (s *UserService) CreateInitialData() error {
 	}
 
 	if err := s.userRepo.CreateBatch(users); err != nil {
-		s.logger.Error("Failed to create initial data", "error", err)
 		return err
 	}
-
-	s.logger.Info("Initial data created successfully", "count", len(users))
 	return nil
 }
 
-// GetAllUsers returns all users
+// GetAllUsers 获取所有用户
 func (s *UserService) GetAllUsers() ([]*models.User, error) {
 	return s.userRepo.GetAll()
 }
 
-// GetUserByID returns a user by ID
+// GetUserByID 根据 ID 获取用户
 func (s *UserService) GetUserByID(id uint) (*models.User, error) {
 	return s.userRepo.GetByID(id)
 }
 
-// UpdateUser updates a user's information
+// UpdateUser 更新用户信息
 func (s *UserService) UpdateUser(id uint, name string) (*models.User, error) {
 	user, err := s.userRepo.GetByID(id)
 	if err != nil {
@@ -90,7 +77,7 @@ func (s *UserService) UpdateUser(id uint, name string) (*models.User, error) {
 	return user, nil
 }
 
-// DeleteUser deletes a user by ID
+// DeleteUser 删除用户
 func (s *UserService) DeleteUser(id uint) error {
 	return s.userRepo.Delete(id)
 }

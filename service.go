@@ -23,16 +23,17 @@ import (
 func serve() {
 	service, err := NewService()
 	if err != nil {
-		slog.Error("❌ Failed to create service", "error", err)
+		slog.Error("❌ 创建服务失败", "错误", err)
 		os.Exit(1)
 	}
+
 	if err := service.Start(); err != nil {
-		slog.Error("❌ Failed to start service", "error", err)
+		slog.Error("❌ 启动服务失败", "错误", err)
 		os.Exit(1)
 	}
 }
 
-// Service represents the application service
+// Service 应用服务结构体 - 保存所有服务组件
 type Service struct {
 	Config     *config.Config
 	DB         *gorm.DB
@@ -41,15 +42,12 @@ type Service struct {
 	HTTPServer *http.Server
 }
 
-// NewService creates a new service instance
 func NewService() (*Service, error) {
-	// Load configuration
 	cfg, err := config.LoadConfig("config/config.yaml")
 	if err != nil {
-		return nil, fmt.Errorf("failed to load configuration: %w", err)
+		return nil, fmt.Errorf("加载配置失败: %w", err)
 	}
 
-	// Initialize structured logger
 	var logLevel slog.Level
 	switch cfg.Logging.Level {
 	case "debug":
@@ -67,56 +65,55 @@ func NewService() (*Service, error) {
 	}))
 	slog.SetDefault(logger)
 
-	// Set Gin mode
 	gin.SetMode(cfg.App.Mode)
 
-	// Initialize database
+	// 初始化数据库连接
 	db, err := gorm.Open(postgres.Open(cfg.Database.GetDSN()), &gorm.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("连接数据库失败: %w", err)
 	}
 
-	// Auto migrate the schema
+	// 自动迁移数据库表结构
 	if err := db.AutoMigrate(&models.User{}); err != nil {
-		return nil, fmt.Errorf("failed to migrate database: %w", err)
+		return nil, fmt.Errorf("数据库迁移失败: %w", err)
 	}
 
-	// Initialize repository and services
+	// 初始化数据访问层和业务层
 	userRepo := dao.NewUserRepository(db)
-	userService := service.NewUserService(userRepo, logger)
+	userService := service.NewUserService(userRepo)
 	userAPI := v1api.NewUserAPI(userService)
 
-	// Initialize with sample data
-	logger.Info("🚀 Initializing application with sample data")
+	// 初始化示例数据
+	logger.Info("🚀 正在初始化应用示例数据")
 	if err := userService.CreateInitialData(); err != nil {
-		return nil, fmt.Errorf("failed to initialize sample data: %w", err)
+		return nil, fmt.Errorf("初始化示例数据失败: %w", err)
 	}
 
-	// Create Gin router
+	// 创建 Gin 路由实例
 	r := gin.New()
 
-	// Add middleware
+	// 添加中间件
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(loggingMiddleware(logger))
 
-	// Health check endpoint with database check
+	// 健康检查接口 - 检查数据库连接状态
 	r.GET("/health", func(c *gin.Context) {
-		// Check database connection
 		sqlDB, err := db.DB()
 		if err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status":    "unhealthy",
-				"error":     "database connection failed",
+				"error":     "数据库连接失败",
 				"timestamp": time.Now().Format(time.RFC3339),
 			})
 			return
 		}
 
+		// 测试数据库连通性
 		if err := sqlDB.Ping(); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status":    "unhealthy",
-				"error":     "database ping failed",
+				"error":     "数据库 Ping 失败",
 				"timestamp": time.Now().Format(time.RFC3339),
 			})
 			return
@@ -129,10 +126,10 @@ func NewService() (*Service, error) {
 		})
 	})
 
-	// Setup all application routes
+	// 设置应用的所有路由
 	router.SetupRoutes(r, userAPI)
 
-	// Create HTTP server
+	// 创建 HTTP 服务器
 	httpServer := &http.Server{
 		Addr:    ":" + strconv.Itoa(cfg.App.Port),
 		Handler: r,
@@ -147,19 +144,17 @@ func NewService() (*Service, error) {
 	}, nil
 }
 
-// Start starts the service
 func (s *Service) Start() error {
-	s.Logger.Info("🚀 Server starting", "port", s.Config.App.Port)
-	s.Logger.Info("💚 Health check available", "url", fmt.Sprintf("http://localhost:%d/health", s.Config.App.Port))
+	s.Logger.Info("🚀 服务器启动中", "端口", s.Config.App.Port)
+	s.Logger.Info("💚 健康检查可用", "地址", fmt.Sprintf("http://localhost:%d/health", s.Config.App.Port))
 
 	return s.HTTPServer.ListenAndServe()
 }
 
-// Stop gracefully stops the service
+// Stop 关闭数据库连接
 func (s *Service) Stop() error {
-	s.Logger.Info("🛑 Server shutting down...")
+	s.Logger.Info("🛑 服务器正在关闭...")
 
-	// Close database connection
 	sqlDB, err := s.DB.DB()
 	if err != nil {
 		return err
@@ -168,15 +163,14 @@ func (s *Service) Stop() error {
 	return sqlDB.Close()
 }
 
-// loggingMiddleware adds structured logging to requests
+// loggingMiddleware 请求日志中间件 - 记录 HTTP 请求详情
 func loggingMiddleware(logger *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
-		// Process request
 		c.Next()
 
-		// Log request details
+		// 记录请求详情
 		duration := time.Since(start)
 		logger.Info("HTTP Request",
 			"method", c.Request.Method,

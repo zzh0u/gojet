@@ -4,68 +4,67 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/goccy/go-yaml"
 )
 
+// Config 应用配置结构体 - 包含所有配置项
 type Config struct {
-	App      AppConfig      `yaml:"app"`
-	Database DatabaseConfig `yaml:"database"`
-	Logging  LoggingConfig  `yaml:"logging"`
+	App      AppConfig      `yaml:"app"`      // 应用配置
+	Database DatabaseConfig `yaml:"database"` // 数据库配置
+	Logging  LoggingConfig  `yaml:"logging"`  // 日志配置
 }
 
+// AppConfig 应用配置 - 定义应用的基本信息
 type AppConfig struct {
-	Name    string `yaml:"name"`
-	Version string `yaml:"version"`
-	Port    int    `yaml:"port"`
-	Mode    string `yaml:"mode"`
+	Name    string `yaml:"name"`    // 应用名称
+	Version string `yaml:"version"` // 应用版本
+	Port    int    `yaml:"port"`    // 服务端口
+	Mode    string `yaml:"mode"`    // 运行模式 (debug/release/test)
 }
 
+// DatabaseConfig 数据库配置 - PostgreSQL 连接参数
 type DatabaseConfig struct {
-	Host            string        `yaml:"host"`
-	Port            int           `yaml:"port"`
-	User            string        `yaml:"user"`
-	Password        string        `yaml:"password"`
-	DBName          string        `yaml:"dbname"`
-	SSLMode         string        `yaml:"sslmode"`
-	Timezone        string        `yaml:"timezone"`
-	MaxIdleConns    int           `yaml:"max_idle_conns"`
-	MaxOpenConns    int           `yaml:"max_open_conns"`
-	ConnMaxLifetime time.Duration `yaml:"conn_max_lifetime"`
+	Host     string `yaml:"host"`     // 数据库主机地址
+	Port     int    `yaml:"port"`     // 数据库端口
+	User     string `yaml:"user"`     // 数据库用户名
+	Password string `yaml:"password"` // 数据库密码
+	DBName   string `yaml:"dbname"`   // 数据库名称
+	SSLMode  string `yaml:"sslmode"`  // SSL 连接模式
+	Timezone string `yaml:"timezone"` // 时区设置
 }
 
+// LoggingConfig 日志配置 - 定义日志行为
 type LoggingConfig struct {
-	Level  string `yaml:"level"`
-	Format string `yaml:"format"`
-	Output string `yaml:"output"`
+	Level  string `yaml:"level"`  // 日志级别 (debug/info/warn/error)
+	Format string `yaml:"format"` // 日志格式 (text/json)
+	Output string `yaml:"output"` // 日志输出位置 (stdout/file)
 }
 
-// LoadConfig loads configuration from file and environment variables
+// LoadConfig 加载配置 - 从 YAML 文件和环境变量读取配置
 func LoadConfig(configPath string) (*Config, error) {
 	config := &Config{}
 
-	// Load from YAML file
+	// 从 YAML 文件加载配置
 	if configPath != "" {
 		data, err := os.ReadFile(configPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read config file: %w", err)
+			return nil, fmt.Errorf("读取配置文件失败: %w", err)
 		}
 
 		if err := yaml.Unmarshal(data, config); err != nil {
-			return nil, fmt.Errorf("failed to parse config file: %w", err)
+			return nil, fmt.Errorf("解析配置文件失败: %w", err)
 		}
 	}
 
-	// Override with environment variables
+	// 使用环境变量覆盖配置文件中的设置
 	config.overrideWithEnv()
 
 	return config, nil
 }
 
-// overrideWithEnv overrides config values with environment variables
+// overrideWithEnv 使用环境变量覆盖配置 - 优先级：环境变量 > 配置文件
 func (c *Config) overrideWithEnv() {
-	// App config
 	if val := os.Getenv("APP_NAME"); val != "" {
 		c.App.Name = val
 	}
@@ -78,7 +77,7 @@ func (c *Config) overrideWithEnv() {
 		c.App.Mode = val
 	}
 
-	// Database config
+	// 数据库配置
 	if val := os.Getenv("DB_HOST"); val != "" {
 		c.Database.Host = val
 	}
@@ -100,7 +99,7 @@ func (c *Config) overrideWithEnv() {
 		c.Database.SSLMode = val
 	}
 
-	// Logging config
+	// 日志配置
 	if val := os.Getenv("LOG_LEVEL"); val != "" {
 		c.Logging.Level = val
 	}
@@ -109,8 +108,9 @@ func (c *Config) overrideWithEnv() {
 	}
 }
 
-// GetDSN returns the database connection string
+// GetDSN 获取数据库连接字符串 - 构建 PostgreSQL DSN 连接串
 func (db *DatabaseConfig) GetDSN() string {
+	// 按照 PostgreSQL 的 DSN 格式拼接连接参数
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
 		db.Host, db.User, db.Password, db.DBName, db.Port, db.SSLMode, db.Timezone)
 }

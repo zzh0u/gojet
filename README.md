@@ -67,13 +67,6 @@ go run main.go
 make build && ./main
 ```
 
-### 访问服务
-
-应用启动后，可以通过以下地址访问：
-
-- **健康检查**: http://localhost:8080/health
-- **API 文档**: （安装 swag 后生成） http://localhost:8080/swagger/index.html
-
 ## 项目结构
 
 ```

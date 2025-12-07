@@ -6,12 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes configures all application routes
+// SetupRoutes 配置所有应用路由
 func SetupRoutes(r *gin.Engine, v1api *v1api.UserAPI) {
-	// API v1 routes
 	apiV1 := r.Group("/api/v1")
 	{
-		// User routes
 		users := apiV1.Group("/users")
 		{
 			users.POST("/insert", v1api.InsertInitialData)

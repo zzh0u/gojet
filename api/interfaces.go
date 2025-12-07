@@ -4,23 +4,13 @@ import (
 	"gojet/models"
 )
 
-// UserService defines the interface for user operations that API layer needs
-type UserService interface {
-	// CreateUser creates a new user
+// User 用户服务接口 - 定义 API 层需要的用户操作
+// 这个接口让 API 层不直接依赖具体的服务实现，方便测试和解耦
+type User interface {
 	CreateUser(name string) (*models.User, error)
-
-	// CreateInitialData creates initial student data
 	CreateInitialData() error
-
-	// GetAllUsers returns all users
 	GetAllUsers() ([]*models.User, error)
-
-	// GetUserByID returns a user by ID
 	GetUserByID(id uint) (*models.User, error)
-
-	// UpdateUser updates a user's information
 	UpdateUser(id uint, name string) (*models.User, error)
-
-	// DeleteUser deletes a user by ID
 	DeleteUser(id uint) error
 }
