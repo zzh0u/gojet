@@ -36,4 +36,33 @@ install-swag:
 swag:
 	$(SWAG) init
 
-.PHONY: build install-lint check-golangci-lint-version lint goimports install-swag swag
+# Docker Compose commands
+docker-up:
+	@echo "启动 Docker Compose 服务"
+	docker-compose up -d
+
+docker-up-build:
+	@echo "构建并启动 Docker Compose 服务"
+	docker-compose up --build -d
+
+docker-down:
+	@echo "停止 Docker Compose 服务"
+	docker-compose down
+
+docker-logs:
+	@echo "查看 Docker Compose 日志"
+	docker-compose logs -f
+
+docker-ps:
+	@echo "查看 Docker Compose 服务状态"
+	docker-compose ps
+
+docker-clean:
+	@echo "清理 Docker Compose 容器和网络"
+	docker-compose down -v --remove-orphans
+
+docker-restart:
+	@echo "重启 Docker Compose 服务"
+	docker-compose restart
+
+.PHONY: build install-lint check-golangci-lint-version lint goimports install-swag swag docker-up docker-up-build docker-down docker-logs docker-ps docker-clean docker-restart
