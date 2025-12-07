@@ -1,0 +1,14 @@
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+bin
+vendor
+node_modules
+*.log
+*.tmp
+*.swp
+.idea
+.vscode
+*.md
+coverage.out

@@ -1,37 +1,30 @@
-# Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25.5-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-    apk add --no-cache git
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
-# Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+# 构建应用（剥离符号表与 DWARF 信息以减小二进制体积）
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags '-s -w' -o main .
 
-# Final stage
 FROM alpine:3.20
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-    apk --no-cache add ca-certificates tzdata
+    apk --no-cache add ca-certificates
 
 
 WORKDIR /root/
 
-# Copy the binary and config from builder stage
+# 从构建阶段复制二进制与配置文件
 COPY --from=builder /app/main .
 COPY --from=builder /app/config ./config
 
-# Expose port
 EXPOSE 8080
 
-# Run the binary
+# 启动二进制
 CMD ["./main"]
