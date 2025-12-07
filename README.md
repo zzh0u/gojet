@@ -16,8 +16,9 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，包含简单的�
 - ✅ **健康检查** - HTTP 健康检查端点，包含数据库状态
 - ✅ **请求追踪** - 自动记录 HTTP 请求日志
 - ✅ **Docker 支持** - 完整的 Docker 和 Docker Compose 配置
-- ✅ **代码质量工具** - Makefile 集成 golangci-lint 静态检查（需安装）
-- ✅ **API 文档支持** - 支持 Swagger 文档生成（需安装 swag）
+- ✅ **代码质量工具** - Makefile 集成 golangci-lint 静态检查
+- ✅ **API 文档支持** - 支持 Swagger 文档生成
+- ✅ **统一响应处理** - 标准化的 API 响应格式和错误消息常量
 
 ## 技术栈
 
@@ -43,8 +44,14 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，包含简单的�
 git clone <repository-url>
 cd gojet
 
-# 启动服务（包含 PostgreSQL）
-docker-compose up --build
+# 启动服务
+make docker-up-build    # 构建并启动服务
+make docker-up          # 启动服务
+make docker-down        # 停止服务
+make docker-logs        # 查看实时日志
+make docker-ps          # 查看服务状态
+make docker-restart     # 重启服务
+make docker-clean       # 清理容器和数据卷
 
 # 服务将在 http://localhost:8080 运行
 # 数据库将在 localhost:5432 运行
@@ -69,12 +76,13 @@ make build && ./main
 
 ## 项目结构
 
-```
-├── api/                    # HTTP API 处理层
-├── service/               # 业务逻辑服务层
-├── dao/                   # 数据访问对象层
-├── models/                # 数据模型定义
-├── config/                # 配置文件
+```text
+├── api/                  # HTTP API 处理层
+├── service/              # 业务逻辑服务层
+├── dao/                  # 数据访问对象层
+├── models/               # 数据模型定义
+├── config/               # 配置文件
+├── util/                 # 统一响应处理工具
 ├── main.go               # 应用入口
 ├── service.go            # 服务启动逻辑
 ├── go.mod                # Go 模块定义
@@ -92,26 +100,25 @@ make build && ./main
 项目提供了丰富的 Makefile 命令，简化开发流程：
 
 ```bash
-# 安装 golangci-lint 代码检查工具
-make install-lint
+# 代码质量工具
+make install-lint        # 安装 golangci-lint 代码检查工具
+make lint               # 运行代码静态检查
+make install-goimports  # 安装 goimports 工具（格式化 Go 导入语句）
+make goimports          # 格式化代码导入语句
+make install-swag       # 安装 swag 工具（生成 Swagger 文档）
+make swag               # 生成 Swagger 文档
 
-# 运行代码静态检查
-make lint
+# 构建和运行
+make build              # 编译 Linux 可执行文件
 
-# 安装 goimports 工具（格式化 Go 导入语句）
-make install-goimports
-
-# 格式化代码导入语句
-make goimports
-
-# 安装 swag 工具（生成 Swagger 文档）
-make install-swag
-
-# 生成 Swagger 文档
-make swag
-
-# 编译 Linux 可执行文件
-make build
+# Docker Compose 命令
+make docker-up          # 启动 Docker Compose 服务
+make docker-up-build    # 构建并启动 Docker Compose 服务
+make docker-down        # 停止 Docker Compose 服务
+make docker-logs        # 查看 Docker Compose 实时日志
+make docker-ps          # 查看 Docker Compose 服务状态
+make docker-restart     # 重启 Docker Compose 服务
+make docker-clean       # 清理 Docker Compose 容器和数据卷
 ```
 
 **注意**：使用 `make goimports` 和 `make swag` 前，需要先安装相应工具。
