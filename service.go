@@ -14,6 +14,7 @@ import (
 	"gojet/models"
 	"gojet/router"
 	"gojet/service"
+	"gojet/util/response"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -101,25 +102,17 @@ func NewService() (*Service, error) {
 	r.GET("/health", func(c *gin.Context) {
 		sqlDB, err := db.DB()
 		if err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status":    "unhealthy",
-				"error":     "数据库连接失败",
-				"timestamp": time.Now().Format(time.RFC3339),
-			})
+			response.Error(c, 503, "数据库连接失败")
 			return
 		}
 
 		// 测试数据库连通性
 		if err := sqlDB.Ping(); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status":    "unhealthy",
-				"error":     "数据库 Ping 失败",
-				"timestamp": time.Now().Format(time.RFC3339),
-			})
+			response.Error(c, 503, "数据库 Ping 失败")
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
+		response.Success(c, "", gin.H{
 			"status":    "healthy",
 			"timestamp": time.Now().Format(time.RFC3339),
 			"version":   cfg.App.Version,
