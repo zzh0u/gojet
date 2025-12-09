@@ -4,24 +4,23 @@ import (
 	"errors"
 
 	"gojet/models"
-	"gojet/service"
 	"gojet/util/apperror"
 	"gojet/util/response"
 
 	"gorm.io/gorm"
 )
 
-type userRepository struct {
+type UserRepository struct {
 	db *gorm.DB // GORM 数据库连接实例
 }
 
 // NewUserRepository 创建用户仓库实例
-func NewUserRepository(db *gorm.DB) service.User {
-	return &userRepository{db: db}
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
 // Create 创建用户
-func (r *userRepository) Create(user *models.User) error {
+func (r *UserRepository) Create(user *models.User) error {
 	result := r.db.Create(user)
 	if result.Error != nil {
 		return apperror.Wrap(result.Error, 500, response.MsgDBInsertError)
@@ -30,7 +29,7 @@ func (r *userRepository) Create(user *models.User) error {
 }
 
 // CreateBatch 批量创建用户
-func (r *userRepository) CreateBatch(users []*models.User) error {
+func (r *UserRepository) CreateBatch(users []*models.User) error {
 	result := r.db.CreateInBatches(users, len(users))
 	if result.Error != nil {
 		return apperror.Wrap(result.Error, 500, response.MsgDBInsertError)
@@ -39,7 +38,7 @@ func (r *userRepository) CreateBatch(users []*models.User) error {
 }
 
 // GetAll 获取所有用户
-func (r *userRepository) GetAll() ([]*models.User, error) {
+func (r *UserRepository) GetAll() ([]*models.User, error) {
 	var users []*models.User
 	// GORM 默认不会查询软删除的记录
 	result := r.db.Find(&users)
@@ -50,7 +49,7 @@ func (r *userRepository) GetAll() ([]*models.User, error) {
 }
 
 // GetByID 根据 ID 获取用户
-func (r *userRepository) GetByID(id uint) (*models.User, error) {
+func (r *UserRepository) GetByID(id uint) (*models.User, error) {
 	var user models.User
 	result := r.db.First(&user, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -63,7 +62,7 @@ func (r *userRepository) GetByID(id uint) (*models.User, error) {
 }
 
 // Update 更新用户 - 保存用户信息到数据库
-func (r *userRepository) Update(user *models.User) error {
+func (r *UserRepository) Update(user *models.User) error {
 	result := r.db.Save(user)
 	if result.Error != nil {
 		return apperror.Wrap(result.Error, 500, response.MsgDBUpdateError)
@@ -72,7 +71,7 @@ func (r *userRepository) Update(user *models.User) error {
 }
 
 // Delete 删除用户 - 软删除指定 ID 的用户
-func (r *userRepository) Delete(id uint) error {
+func (r *UserRepository) Delete(id uint) error {
 	result := r.db.Delete(&models.User{}, id)
 	if result.Error != nil {
 		return apperror.Wrap(result.Error, 500, response.MsgDBDeleteError)

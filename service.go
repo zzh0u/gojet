@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"gojet/api/v1api"
 	"gojet/config"
 	"gojet/dao"
 	"gojet/models"
@@ -22,14 +21,14 @@ import (
 )
 
 func serve() {
-	service, err := NewService()
+	newService, err := NewService()
 	if err != nil {
-		slog.Error("❌ 创建服务失败", "错误", err)
+		slog.Error("创建服务失败", "错误", err)
 		os.Exit(1)
 	}
 
-	if err := service.Start(); err != nil {
-		slog.Error("❌ 启动服务失败", "错误", err)
+	if err := newService.Start(); err != nil {
+		slog.Error("启动服务失败", "错误", err)
 		os.Exit(1)
 	}
 }
@@ -39,7 +38,6 @@ type Service struct {
 	Config     *config.Config
 	DB         *gorm.DB
 	Logger     *slog.Logger
-	UserAPI    *v1api.UserAPI
 	HTTPServer *http.Server
 }
 
@@ -81,12 +79,11 @@ func NewService() (*Service, error) {
 
 	// 初始化数据访问层和业务层
 	userRepo := dao.NewUserRepository(db)
-	userService := service.NewUserService(userRepo)
-	userAPI := v1api.NewUserAPI(userService)
+	service.InitService(userRepo)
 
 	// 初始化示例数据
-	logger.Info("🚀 正在初始化应用示例数据")
-	if err := userService.CreateInitialData(); err != nil {
+	logger.Info("正在初始化应用示例数据")
+	if err := service.CreateInitialData(); err != nil {
 		return nil, fmt.Errorf("初始化示例数据失败: %w", err)
 	}
 
@@ -120,7 +117,7 @@ func NewService() (*Service, error) {
 	})
 
 	// 设置应用的所有路由
-	router.SetupRoutes(r, userAPI)
+	router.SetupRoutes(r)
 
 	// 创建 HTTP 服务器
 	httpServer := &http.Server{
@@ -132,21 +129,20 @@ func NewService() (*Service, error) {
 		Config:     cfg,
 		DB:         db,
 		Logger:     logger,
-		UserAPI:    userAPI,
 		HTTPServer: httpServer,
 	}, nil
 }
 
 func (s *Service) Start() error {
-	s.Logger.Info("🚀 服务器启动中", "端口", s.Config.App.Port)
-	s.Logger.Info("💚 健康检查可用", "地址", fmt.Sprintf("http://localhost:%d/health", s.Config.App.Port))
+	s.Logger.Info("服务器启动中", "端口", s.Config.App.Port)
+	s.Logger.Info("健康检查可用", "地址", fmt.Sprintf("http://localhost:%d/health", s.Config.App.Port))
 
 	return s.HTTPServer.ListenAndServe()
 }
 
 // Stop 关闭数据库连接
 func (s *Service) Stop() error {
-	s.Logger.Info("🛑 服务器正在关闭...")
+	s.Logger.Info("服务器正在关闭...")
 
 	sqlDB, err := s.DB.DB()
 	if err != nil {

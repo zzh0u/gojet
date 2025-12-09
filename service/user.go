@@ -1,29 +1,28 @@
 package service
 
 import (
+	"gojet/dao"
 	"gojet/models"
 	"gojet/util/apperror"
 	"gojet/util/response"
 	"log/slog"
 )
 
-// UserService 用户服务
-type UserService struct {
-	userRepo User
-}
+// userRepo 包级变量，存储用户仓库实例
+var userRepo *dao.UserRepository
 
-// NewUserService 创建用户服务实例
-func NewUserService(userRepo User) *UserService {
-	return &UserService{userRepo: userRepo}
+// InitService 初始化服务层，设置依赖的数据仓库
+func InitService(repo *dao.UserRepository) {
+	userRepo = repo
 }
 
 // CreateUser 创建新用户
-func (s *UserService) CreateUser(name string) (*models.User, error) {
+func CreateUser(name string) (*models.User, error) {
 	user := &models.User{
 		Name: name,
 	}
 
-	if err := s.userRepo.Create(user); err != nil {
+	if err := userRepo.Create(user); err != nil {
 		slog.Error("创建用户失败", "用户", user, "error", err)
 		return nil, apperror.Wrap(err, 500, response.MsgUserCreateFailed)
 	}
@@ -31,8 +30,8 @@ func (s *UserService) CreateUser(name string) (*models.User, error) {
 }
 
 // CreateInitialData 创建初始学生数据
-func (s *UserService) CreateInitialData() error {
-	existingUsers, err := s.userRepo.GetAll()
+func CreateInitialData() error {
+	existingUsers, err := userRepo.GetAll()
 	if err != nil {
 		// 重要：遇到错误应该返回，而不是继续执行
 		return apperror.Wrap(err, 500, "检查现有数据失败")
@@ -49,7 +48,7 @@ func (s *UserService) CreateInitialData() error {
 		{Name: "吐司"},
 	}
 
-	if err := s.userRepo.CreateBatch(users); err != nil {
+	if err := userRepo.CreateBatch(users); err != nil {
 		slog.Error("创建初始数据失败", "error", err)
 		return apperror.Wrap(err, 500, response.MsgDBInsertError)
 	}
@@ -59,8 +58,8 @@ func (s *UserService) CreateInitialData() error {
 }
 
 // GetAllUsers 获取所有用户
-func (s *UserService) GetAllUsers() ([]*models.User, error) {
-	users, err := s.userRepo.GetAll()
+func GetAllUsers() ([]*models.User, error) {
+	users, err := userRepo.GetAll()
 	if err != nil {
 		return nil, apperror.Wrap(err, 500, "获取用户列表失败")
 	}
@@ -68,8 +67,8 @@ func (s *UserService) GetAllUsers() ([]*models.User, error) {
 }
 
 // GetUserByID 根据 ID 获取用户
-func (s *UserService) GetUserByID(id uint) (*models.User, error) {
-	user, err := s.userRepo.GetByID(id)
+func GetUserByID(id uint) (*models.User, error) {
+	user, err := userRepo.GetByID(id)
 	if err != nil {
 		// DAO 层已经包装了错误，直接返回
 		return nil, err
@@ -78,15 +77,15 @@ func (s *UserService) GetUserByID(id uint) (*models.User, error) {
 }
 
 // UpdateUser 更新用户信息
-func (s *UserService) UpdateUser(id uint, name string) (*models.User, error) {
-	user, err := s.userRepo.GetByID(id)
+func UpdateUser(id uint, name string) (*models.User, error) {
+	user, err := userRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
 	user.Name = name
 
-	if err := s.userRepo.Update(user); err != nil {
+	if err := userRepo.Update(user); err != nil {
 		slog.Error("更新用户失败", "id", id, "error", err)
 		return nil, apperror.Wrap(err, 500, response.MsgUserUpdateFailed)
 	}
@@ -96,8 +95,8 @@ func (s *UserService) UpdateUser(id uint, name string) (*models.User, error) {
 }
 
 // DeleteUser 删除用户
-func (s *UserService) DeleteUser(id uint) error {
-	if err := s.userRepo.Delete(id); err != nil {
+func DeleteUser(id uint) error {
+	if err := userRepo.Delete(id); err != nil {
 		slog.Error("删除用户失败", "id", id, "error", err)
 		return apperror.Wrap(err, 500, response.MsgUserDeleteFailed)
 	}

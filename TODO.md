@@ -17,30 +17,9 @@
 - [ ] 数据导出功能（Excel/PDF）
 - [ ] 数据分页查询优化
 
-### 3. API 文档
-
-- [ ] Swagger 文档集成
-- [ ] API 版本管理
-- [ ] 接口权限说明
-
 ## 架构设计
 
-### 1. 接口抽象层
-
-**问题**：当前 service 层和 api 层都定义了 interface，需要验证其合理性
-
-**分析**：
-
-- API 层 interface（`api/interfaces.go`）：定义了 API 层对服务层的需求
-- Service 层 interface（`service/interfaces.go`）：定义了服务层对数据层的需求
-
-**待验证**：
-
-- [ ] 是否两层都需要 interface 抽象？
-- [ ] 是否增加了不必要的复杂度？
-- [ ] 测试便利性是否得到提升？
-
-### 2. Service.go 实现
+### Service.go 实现
 
 **问题**：当前的`service.go`实现方式是否合理？
 
@@ -114,8 +93,7 @@
 ### 高优先级（立即执行）
 
 1. 用户登录功能（JWT）
-2. 验证 interface 抽象的必要性
-3. 评估 service.go 实现合理性
+2. 评估 service.go 实现合理性
 
 ### 中优先级（近期执行）
 
