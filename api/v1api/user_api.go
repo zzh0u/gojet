@@ -82,10 +82,49 @@ func (api *UserAPI) CreateUser(c *gin.Context) {
 		return
 	}
 
+	// if err := user.Validate(); err != nil {
+	// 	fieldErrors := models.FormatValidationError(err)
+	// 	response.BadRequestWithData(c, "用户信息验证失败", fieldErrors)
+	// 	return
+	// }
+
 	newUser, err := api.userService.CreateUser(user.Name)
 	if err != nil {
 		response.HandleError(c, err)
 		return
 	}
 	response.Success(c, "创建成功", newUser)
+}
+
+// UpdateUser 更新用户信息
+func (api *UserAPI) UpdateUser(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		response.BadRequest(c, response.MsgInvalidUserID)
+		return
+	}
+
+	var updateReq struct {
+		Name string `json:"name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&updateReq); err != nil {
+		response.BadRequest(c, response.MsgInvalidParams)
+		return
+	}
+
+	// // 验证 Name 字段
+	// tempUser := &models.User{Name: updateReq.Name}
+	// if err := tempUser.Validate(); err != nil {
+	// 	fieldErrors := models.FormatValidationError(err)
+	// 	response.BadRequestWithData(c, "用户信息验证失败", fieldErrors)
+	// 	return
+	// }
+
+	updatedUser, err := api.userService.UpdateUser(uint(id), updateReq.Name)
+	if err != nil {
+		response.HandleError(c, err)
+		return
+	}
+	response.Success(c, "更新成功", updatedUser)
 }
