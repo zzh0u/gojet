@@ -16,7 +16,7 @@ type userRepository struct {
 }
 
 // NewUserRepository 创建用户仓库实例
-func NewUserRepository(db *gorm.DB) service.UserRepository {
+func NewUserRepository(db *gorm.DB) service.User {
 	return &userRepository{db: db}
 }
 

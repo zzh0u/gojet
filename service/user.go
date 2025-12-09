@@ -9,11 +9,11 @@ import (
 
 // UserService 用户服务
 type UserService struct {
-	userRepo UserRepository
+	userRepo User
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo UserRepository) *UserService {
+func NewUserService(userRepo User) *UserService {
 	return &UserService{userRepo: userRepo}
 }
 

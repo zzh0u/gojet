@@ -4,8 +4,8 @@ import (
 	"gojet/models"
 )
 
-// UserRepository 用户仓库接口
-type UserRepository interface {
+// User 用户接口
+type User interface {
 	Create(user *models.User) error
 	CreateBatch(users []*models.User) error
 	GetAll() ([]*models.User, error)
