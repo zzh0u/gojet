@@ -12,4 +12,3 @@ database:
   password: "p@ssw0rd_"
   dbname: "gojet"
   sslmode: "disable"
-  timezone: "Asia/Shanghai"

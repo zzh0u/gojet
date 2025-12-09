@@ -31,7 +31,6 @@ type DatabaseConfig struct {
 	Password string `yaml:"password"` // 数据库密码
 	DBName   string `yaml:"dbname"`   // 数据库名称
 	SSLMode  string `yaml:"sslmode"`  // SSL 连接模式
-	Timezone string `yaml:"timezone"` // 时区设置
 }
 
 // LoggingConfig 日志配置 - 定义日志行为
@@ -111,6 +110,6 @@ func (c *Config) overrideWithEnv() {
 // GetDSN 获取数据库连接字符串 - 构建 PostgreSQL DSN 连接串
 func (db *DatabaseConfig) GetDSN() string {
 	// 按照 PostgreSQL 的 DSN 格式拼接连接参数
-	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
-		db.Host, db.User, db.Password, db.DBName, db.Port, db.SSLMode, db.Timezone)
+	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s ",
+		db.Host, db.User, db.Password, db.DBName, db.Port, db.SSLMode)
 }

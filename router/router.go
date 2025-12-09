@@ -8,7 +8,7 @@ import (
 
 // SetupRoutes 配置所有应用路由
 func SetupRoutes(r *gin.Engine, v1api *v1api.UserAPI) {
-	apiV1 := r.Group("/api/v1")
+	apiV1 := r.Group("/v1")
 	{
 		users := apiV1.Group("/users")
 		{
