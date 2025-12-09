@@ -14,7 +14,7 @@ build:
 	@echo "编译完成"
 
 lint: check-golangci-lint-version
-	$(LINT) run 
+	$(LINT) -c ./.golangci.yaml run --output.text.path=stdout --output.text.print-issued-lines=true --output.text.print-linter-name=true
 
 install-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v$(LINT_VERSION)
@@ -53,16 +53,17 @@ docker-logs:
 	@echo "查看 Docker Compose 日志"
 	docker-compose logs -f
 
-docker-ps:
-	@echo "查看 Docker Compose 服务状态"
-	docker-compose ps
-
 docker-clean:
 	@echo "清理 Docker Compose 容器和网络"
 	docker-compose down -v --remove-orphans
 
 docker-restart:
-	@echo "重启 Docker Compose 服务"
-	docker-compose restart
+	@echo "删除容器与镜像，尝试从注册表拉取镜像，若失败则本地构建并启动"
+	# 停止并移除容器、卷与孤儿容器
+	docker-compose down
+	# 删除本地镜像（若存在）
+	docker image rm $(DOCKER_IMAGE):latest || true
+	# 使用本地镜像（如不存在则本地构建）并启动
+	docker-compose up --build -d
 
 .PHONY: build install-lint check-golangci-lint-version lint goimports install-swag swag docker-up docker-up-build docker-down docker-logs docker-ps docker-clean docker-restart
