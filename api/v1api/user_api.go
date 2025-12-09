@@ -24,7 +24,7 @@ func NewUserAPI(userService api.User) *UserAPI {
 func (api *UserAPI) InsertInitialData(c *gin.Context) {
 	// 调用服务层创建初始数据
 	if err := api.userService.CreateInitialData(); err != nil {
-		response.InternalServerError(c, response.MsgDatabaseError)
+		response.HandleError(c, err)
 		return
 	}
 	response.Success(c, "数据插入成功", nil)
@@ -40,7 +40,7 @@ func (api *UserAPI) DeleteUser(c *gin.Context) {
 	}
 
 	if err := api.userService.DeleteUser(uint(id)); err != nil {
-		response.InternalServerError(c, response.MsgUserDeleteFailed)
+		response.HandleError(c, err)
 		return
 	}
 	response.Success(c, "删除成功", nil)
@@ -57,7 +57,8 @@ func (api *UserAPI) GetUserByID(c *gin.Context) {
 
 	user, err := api.userService.GetUserByID(uint(id))
 	if err != nil {
-		response.NotFound(c, response.MsgUserNotFound)
+		// 使用 HandleError 统一处理，支持 400/404/500 等错误码
+		response.HandleError(c, err)
 		return
 	}
 	response.Success(c, "", user)
@@ -67,7 +68,7 @@ func (api *UserAPI) GetUserByID(c *gin.Context) {
 func (api *UserAPI) GetAllUsers(c *gin.Context) {
 	users, err := api.userService.GetAllUsers()
 	if err != nil {
-		response.InternalServerError(c, response.MsgDBQueryError)
+		response.HandleError(c, err)
 		return
 	}
 	response.Success(c, "", users)
@@ -83,7 +84,7 @@ func (api *UserAPI) CreateUser(c *gin.Context) {
 
 	newUser, err := api.userService.CreateUser(user.Name)
 	if err != nil {
-		response.InternalServerError(c, response.MsgUserCreateFailed)
+		response.HandleError(c, err)
 		return
 	}
 	response.Success(c, "创建成功", newUser)

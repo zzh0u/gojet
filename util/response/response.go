@@ -1,9 +1,13 @@
 package response
 
 import (
+	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"gojet/util/apperror"
 )
 
 // Response 统一响应结构体
@@ -24,7 +28,6 @@ func Success(c *gin.Context, message string, data any) {
 		Data:    data,
 	})
 }
-
 
 // Error 返回错误响应
 func Error(c *gin.Context, code int, message string) {
@@ -54,16 +57,6 @@ func BadRequest(c *gin.Context, message string) {
 	Error(c, 400, message)
 }
 
-// Unauthorized 返回401错误
-func Unauthorized(c *gin.Context, message string) {
-	Error(c, 401, message)
-}
-
-// Forbidden 返回403错误
-func Forbidden(c *gin.Context, message string) {
-	Error(c, 403, message)
-}
-
 // NotFound 返回404错误
 func NotFound(c *gin.Context, message string) {
 	Error(c, 404, message)
@@ -72,4 +65,37 @@ func NotFound(c *gin.Context, message string) {
 // InternalServerError 返回500错误
 func InternalServerError(c *gin.Context, message string) {
 	Error(c, 500, message)
+}
+
+// HandleError 统一处理 service 层返回的错误。
+// - 如果是 *errpkg.Error，则按照其中的 Code/Message 返回对应响应。
+// - 否则返回通用 500（服务器内部错误）。
+func HandleError(c *gin.Context, err error) {
+	if err == nil {
+		return
+	}
+	var e *apperror.Error
+	if errors.As(err, &e) {
+		// 记录错误日志，包含原始错误信息（如果有）
+		if e.Err != nil {
+			slog.Error("应用错误", "code", e.Code, "message", e.Message, "original_error", e.Err)
+		} else {
+			slog.Error("应用错误", "code", e.Code, "message", e.Message)
+		}
+
+		switch e.Code {
+		case 400:
+			BadRequest(c, e.Message)
+		case 404:
+			NotFound(c, e.Message)
+		case 500:
+			InternalServerError(c, e.Message)
+		default:
+			InternalServerError(c, e.Message)
+		}
+		return
+	}
+	// 非 Error 类型，记录日志并返回通用内部错误
+	slog.Error("未处理的应用错误", "error", err)
+	InternalServerError(c, MsgInternalError)
 }

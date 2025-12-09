@@ -5,6 +5,8 @@ import (
 
 	"gojet/models"
 	"gojet/service"
+	"gojet/util/apperror"
+	"gojet/util/response"
 
 	"gorm.io/gorm"
 )
@@ -21,13 +23,19 @@ func NewUserRepository(db *gorm.DB) service.UserRepository {
 // Create 创建用户
 func (r *userRepository) Create(user *models.User) error {
 	result := r.db.Create(user)
-	return result.Error
+	if result.Error != nil {
+		return apperror.Wrap(result.Error, 500, response.MsgDBInsertError)
+	}
+	return nil
 }
 
 // CreateBatch 批量创建用户
 func (r *userRepository) CreateBatch(users []*models.User) error {
 	result := r.db.CreateInBatches(users, len(users))
-	return result.Error
+	if result.Error != nil {
+		return apperror.Wrap(result.Error, 500, response.MsgDBInsertError)
+	}
+	return nil
 }
 
 // GetAll 获取所有用户
@@ -35,28 +43,39 @@ func (r *userRepository) GetAll() ([]*models.User, error) {
 	var users []*models.User
 	// GORM 默认不会查询软删除的记录
 	result := r.db.Find(&users)
-	return users, result.Error
+	if result.Error != nil {
+		return nil, apperror.Wrap(result.Error, 500, response.MsgDBQueryError)
+	}
+	return users, nil
 }
 
-// GetByID 根据 ID 获取用户 - 查询指定 ID 的用户信息
+// GetByID 根据 ID 获取用户
 func (r *userRepository) GetByID(id uint) (*models.User, error) {
 	var user models.User
 	result := r.db.First(&user, id)
-	// 如果记录不存在，返回 nil 而不是错误
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, nil
+		return nil, apperror.New(404, response.MsgRecordNotFound)
 	}
-	return &user, result.Error
+	if result.Error != nil {
+		return nil, apperror.Wrap(result.Error, 500, response.MsgDBQueryError)
+	}
+	return &user, nil
 }
 
 // Update 更新用户 - 保存用户信息到数据库
 func (r *userRepository) Update(user *models.User) error {
 	result := r.db.Save(user)
-	return result.Error
+	if result.Error != nil {
+		return apperror.Wrap(result.Error, 500, response.MsgDBUpdateError)
+	}
+	return nil
 }
 
 // Delete 删除用户 - 软删除指定 ID 的用户
 func (r *userRepository) Delete(id uint) error {
 	result := r.db.Delete(&models.User{}, id)
-	return result.Error
+	if result.Error != nil {
+		return apperror.Wrap(result.Error, 500, response.MsgDBDeleteError)
+	}
+	return nil
 }
