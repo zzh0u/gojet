@@ -9,6 +9,6 @@ database:
   host: "localhost"
   port: 5432
   user: "zhou"
-  password: "password_"
+  password: "p@ssw0rd_"
   dbname: "gojet"
   sslmode: "disable"
