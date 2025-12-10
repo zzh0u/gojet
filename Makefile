@@ -1,68 +1,53 @@
+.PHONY: build lint install-lint goimports swag run-dev run-prod up up-build down logs ps clean restart
 BINARY_NAME := main
-DOCKER_IMAGE := gojet
 GO := go
 GOBIN := "$(shell go env GOPATH)/bin"
 LINT := $(GOBIN)/golangci-lint
 LINT_VERSION := 2.7.1
 SWAG := $(GOBIN)/swag
+DOCKER_COMPOSE := docker-compose
 
 build:
-	@echo "正在编译 Linux 下可执行文件"
+	@echo "编译 Linux 可执行文件..."
 	@mkdir -p bin
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 	$(GO) build -ldflags '-extldflags "-static" -s -w' -o bin/$(BINARY_NAME)
-	@echo "编译完成"
 
-lint: check-golangci-lint-version
-	$(LINT) run 
+lint:
+	@which $(LINT) > /dev/null || (echo "golangci-lint 未安装，运行 'make install-lint'" && exit 1)
+	$(LINT) run
 
 install-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v$(LINT_VERSION)
 
-check-golangci-lint-version:
-	@which $(LINT) > /dev/null || (echo "golangci-lint 未安装，运行 'make install-lint' 安装" && exit 1)
+goimports: $(GOBIN)/goimports
+	$(GOBIN)/goimports -w .
 
-GOIMPORTS := $(GOBIN)/goimports
+$(GOBIN)/goimports:
+	$(GO) install golang.org/x/tools/cmd/goimports@latest
 
-install-goimports:
-	@command -v $(GOIMPORTS) >/dev/null || $(GO) install golang.org/x/tools/cmd/goimports@latest
+install-swag: $(GOBIN)/swag
 
-goimports: 
-	$(GOIMPORTS) -w .
+$(GOBIN)/swag:
+	$(GO) install github.com/swaggo/swag/cmd/swag@latest
 
-install-swag:
-	@command -v $(SWAG) >/dev/null || $(GO) install github.com/swaggo/swag/cmd/swag@latest
-
-swag:
+swag: install-swag
 	$(SWAG) init
 
-# Docker Compose commands
-docker-up:
-	@echo "启动 Docker Compose 服务"
-	docker-compose up -d
+# Docker commands
+up:
+	$(DOCKER_COMPOSE) up -d
 
-docker-up-build:
-	@echo "构建并启动 Docker Compose 服务"
-	docker-compose up --build -d
+up-build:
+	$(DOCKER_COMPOSE) up --build -d
 
-docker-down:
-	@echo "停止 Docker Compose 服务"
-	docker-compose down
+down:
+	$(DOCKER_COMPOSE) down
 
-docker-logs:
-	@echo "查看 Docker Compose 日志"
-	docker-compose logs -f
+logs:
+	$(DOCKER_COMPOSE) logs -f
 
-docker-ps:
-	@echo "查看 Docker Compose 服务状态"
-	docker-compose ps
+clean:
+	$(DOCKER_COMPOSE) down -v --remove-orphans
 
-docker-clean:
-	@echo "清理 Docker Compose 容器和网络"
-	docker-compose down -v --remove-orphans
-
-docker-restart:
-	@echo "重启 Docker Compose 服务"
-	docker-compose restart
-
-.PHONY: build install-lint check-golangci-lint-version lint goimports install-swag swag docker-up docker-up-build docker-down docker-logs docker-ps docker-clean docker-restart
+restart: down up-build
