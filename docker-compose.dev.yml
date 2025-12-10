@@ -1,0 +1,23 @@
+# Docker Compose for Development Environment
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  app:
+    container_name: gojet-dev
+    environment:
+      - APP_MODE=debug  # 开发环境使用debug模式
+      - LOG_LEVEL=debug  # 开发环境使用debug级别
+      - LOG_OUTPUT=stdout  # 开发环境输出到stdout
+    volumes:
+      - ./:/app  # 挂载源代码，支持热重载
+      - /app/tmp  # 排除tmp目录
+    command: sh -c "go mod download && go run main.go"  # 使用go run支持热重载（配合air更好）
+    # For hot reload with air (需要先安装air):
+    # command: air
+
+  postgres:
+    container_name: postgres-dev
+
+networks:
+  gojet-network:
+    name: gojet-network-dev

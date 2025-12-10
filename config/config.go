@@ -35,9 +35,9 @@ type DatabaseConfig struct {
 
 // LoggingConfig 日志配置 - 定义日志行为
 type LoggingConfig struct {
-	Level  string `yaml:"level"`  // 日志级别 (debug/info/warn/error)
-	Format string `yaml:"format"` // 日志格式 (text/json)
-	Output string `yaml:"output"` // 日志输出位置 (stdout/file)
+	Level    string `yaml:"level"`     // 日志级别 (debug/info/warn/error)
+	Output   string `yaml:"output"`    // 日志输出位置 (stdout/file/both)
+	FilePath string `yaml:"file_path"` // 日志文件路径
 }
 
 // LoadConfig 加载配置 - 从 YAML 文件和环境变量读取配置
@@ -102,8 +102,11 @@ func (c *Config) overrideWithEnv() {
 	if val := os.Getenv("LOG_LEVEL"); val != "" {
 		c.Logging.Level = val
 	}
-	if val := os.Getenv("LOG_FORMAT"); val != "" {
-		c.Logging.Format = val
+	if val := os.Getenv("LOG_OUTPUT"); val != "" {
+		c.Logging.Output = val
+	}
+	if val := os.Getenv("LOG_FILE_PATH"); val != "" {
+		c.Logging.FilePath = val
 	}
 }
 

@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -20,7 +22,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func serve() {
+func server() {
 	newService, err := NewService()
 	if err != nil {
 		slog.Error("创建服务失败", "错误", err)
@@ -59,9 +61,31 @@ func NewService() (*Service, error) {
 		logLevel = slog.LevelInfo
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: logLevel,
-	}))
+	// 根据配置创建日志处理器（统一使用JSON格式）
+	var handler slog.Handler
+	switch cfg.Logging.Output {
+	case "file":
+		// 只输出到文件
+		fileHandler, err := createFileHandler(cfg.Logging.FilePath, logLevel)
+		if err != nil {
+			return nil, fmt.Errorf("创建文件日志处理器失败: %w", err)
+		}
+		handler = fileHandler
+	case "both":
+		// 同时输出到控制台和文件
+		handler = slog.NewJSONHandler(io.MultiWriter(os.Stdout, fileWriter(cfg.Logging.FilePath)), &slog.HandlerOptions{
+			Level: logLevel,
+		})
+	case "stdout":
+		fallthrough
+	default:
+		// 默认输出到标准输出
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: logLevel,
+		})
+	}
+
+	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
 	gin.SetMode(cfg.App.Mode)
@@ -91,7 +115,6 @@ func NewService() (*Service, error) {
 	r := gin.New()
 
 	// 添加中间件
-	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(loggingMiddleware(logger))
 
@@ -150,6 +173,31 @@ func (s *Service) Stop() error {
 	}
 
 	return sqlDB.Close()
+}
+
+// fileWriter 打开或创建日志文件
+func fileWriter(filePath string) io.Writer {
+	// 创建日志目录（如果不存在）
+	dirPath := filepath.Dir(filePath)
+	if err := os.MkdirAll(dirPath, 0755); err != nil {
+		panic(fmt.Sprintf("创建日志目录失败: %v", err))
+	}
+
+	// 打开日志文件（追加模式）
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		panic(fmt.Sprintf("打开日志文件失败: %v", err))
+	}
+	return file
+}
+
+// createFileHandler 创建文件日志处理器
+func createFileHandler(filePath string, level slog.Level) (slog.Handler, error) {
+	writer := fileWriter(filePath)
+	handler := slog.NewJSONHandler(writer, &slog.HandlerOptions{
+		Level: level,
+	})
+	return handler, nil
 }
 
 // loggingMiddleware 请求日志中间件 - 记录 HTTP 请求详情

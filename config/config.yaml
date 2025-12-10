@@ -3,6 +3,7 @@ app:
   name: "gojet"
   version: "1.0.0"
   port: 8080
+  mode: "debug"  # 运行模式: debug/release/test
 
 # 数据库配置
 database:
@@ -12,3 +13,9 @@ database:
   password: "p@ssw0rd_"
   dbname: "gojet"
   sslmode: "disable"
+
+# 日志配置
+logging:
+  level: "debug"  # 日志级别: debug/info/warn/error
+  output: "stdout"  # 日志输出: stdout,file,both (开发环境用stdout,生产环境建议both)
+  file_path: "./logs/app.log"  # 日志文件路径（当output为file或both时生效）

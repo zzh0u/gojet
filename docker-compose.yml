@@ -1,24 +1,29 @@
+# Docker Compose for Production Environment
+# Usage: docker-compose up --build
+
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: go-app
+    container_name: gojet
     ports:
       - "8080:8080"
     environment:
       - APP_PORT=8080
-      - APP_MODE=release
+      - APP_MODE=release  # 生产环境使用release模式
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=zhou
       - DB_PASSWORD=password_
       - DB_NAME=gojet
       - DB_SSLMODE=disable
-      - LOG_LEVEL=info
-      - LOG_FORMAT=json
+      - LOG_LEVEL=info  # 生产环境使用info级别
+      - LOG_OUTPUT=both  # 同时输出到控制台和文件
+      - LOG_FILE_PATH=./logs/app.log
     volumes:
       - ./config:/app/config:ro
+      - ./logs:/app/logs  # 日志持久化挂载
     restart: unless-stopped
     depends_on:
       - postgres
@@ -27,11 +32,11 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    container_name: postgres-db
+    container_name: postgres
     environment:
       - POSTGRES_DB=gojet
       - POSTGRES_USER=zhou
-      - POSTGRES_PASSWORD=password_
+      - POSTGRES_PASSWORD=p@ssw0rd_
     ports:
       - "5432:5432"
     volumes:
