@@ -26,7 +26,8 @@ services:
       - ./logs:/app/logs  # 日志持久化挂载
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy  # 等待 postgres 健康检查通过
     networks:
       - gojet-network
 
@@ -37,6 +38,12 @@ services:
       - POSTGRES_DB=gojet
       - POSTGRES_USER=zhou
       - POSTGRES_PASSWORD=password_
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zhou -d gojet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s  # 给 PostgreSQL 初始化时间
     ports:
       - "5432:5432"
     volumes:
