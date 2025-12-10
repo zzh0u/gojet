@@ -1,4 +1,4 @@
-.PHONY: build lint install-lint goimports swag run-dev run-prod up up-build down logs ps clean restart
+.PHONY: build lint install-lint goimports install-swag swag up up-build down logs clean restart
 BINARY_NAME := main
 GO := go
 GOBIN := "$(shell go env GOPATH)/bin"
