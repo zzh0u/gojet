@@ -17,7 +17,7 @@ func SetupRoutes(r *gin.Engine) {
 			users.GET("/:id", v1api.GetUserByID)
 			users.GET("", v1api.GetAllUsers)
 			users.POST("", v1api.CreateUser)
-			users.POST("", v1api.UpdateUser)
+			users.PUT("/:id", v1api.UpdateUser)
 		}
 	}
 }
