@@ -61,6 +61,19 @@ func (r *UserRepository) GetByID(id uint) (*models.User, error) {
 	return &user, nil
 }
 
+// GetUserByUserName 根据用户名获取用户
+func (r *UserRepository) GetUserByUserName(username string) (*models.User, error) {
+	var user models.User
+	result := r.db.Where("username = ?", username).First(&user)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, apperror.New(404, response.MsgRecordNotFound)
+	}
+	if result.Error != nil {
+		return nil, apperror.Wrap(result.Error, 500, response.MsgDBQueryError)
+	}
+	return &user, nil
+}
+
 // Update 更新用户 - 保存用户信息到数据库
 func (r *UserRepository) Update(user *models.User) error {
 	result := r.db.Save(user)

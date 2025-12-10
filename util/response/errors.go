@@ -22,4 +22,11 @@ const (
 	MsgDBInsertError     = "数据插入失败"
 	MsgDBUpdateError     = "数据更新失败"
 	MsgDBDeleteError     = "数据删除失败"
+
+	// 认证相关错误
+	MsgAuthFailed   = "认证失败"
+	MsgUnauthorized = "未授权访问"
+	MsgTokenMissing = "令牌缺失"
+	MsgTokenExpired = "令牌已过期"
+	MsgTokenInvalid = "无效的令牌"
 )

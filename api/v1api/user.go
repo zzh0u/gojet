@@ -73,13 +73,14 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	// if err := user.Validate(); err != nil {
-	// 	fieldErrors := models.FormatValidationError(err)
-	// 	response.BadRequestWithData(c, "用户信息验证失败", fieldErrors)
-	// 	return
-	// }
+	hashedPassword, err := models.HashPassword(user.Password)
+	if err != nil {
+		response.Error(c, 500, "密码加密失败")
+		return
+	}
+	user.Password = hashedPassword
 
-	newUser, err := service.CreateUser(user.Name)
+	newUser, err := service.CreateUser(&user)
 	if err != nil {
 		response.HandleError(c, err)
 		return
@@ -105,14 +106,6 @@ func UpdateUser(c *gin.Context) {
 		response.BadRequest(c, response.MsgInvalidParams)
 		return
 	}
-
-	// // 验证 Name 字段
-	// tempUser := &models.User{Name: updateReq.Name}
-	// if err := tempUser.Validate(); err != nil {
-	// 	fieldErrors := models.FormatValidationError(err)
-	// 	response.BadRequestWithData(c, "用户信息验证失败", fieldErrors)
-	// 	return
-	// }
 
 	updatedUser, err := service.UpdateUser(uint(idParam.ID), updateReq.Name)
 	if err != nil {

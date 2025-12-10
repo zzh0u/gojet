@@ -16,16 +16,14 @@ func InitService(repo *dao.UserRepository) {
 	userRepo = repo
 }
 
-// CreateUser 创建新用户
-func CreateUser(name string) (*models.User, error) {
-	user := &models.User{
-		Name: name,
-	}
-
+// CreateUser 使用完整的用户信息创建用户
+func CreateUser(user *models.User) (*models.User, error) {
 	if err := userRepo.Create(user); err != nil {
-		slog.Error("创建用户失败", "用户", user, "error", err)
+		slog.Error("创建用户失败", "用户", user.Username, "error", err)
 		return nil, apperror.Wrap(err, 500, response.MsgUserCreateFailed)
 	}
+
+	slog.Info("创建用户成功", "id", user.ID, "username", user.Username)
 	return user, nil
 }
 
@@ -42,10 +40,20 @@ func CreateInitialData() error {
 	}
 
 	users := []*models.User{
-		{Name: "包子"},
-		{Name: "玉米"},
-		{Name: "花卷"},
-		{Name: "吐司"},
+		{Username: "包子", NickName: "包子", Password: "123456", Email: "baozi@example.com"},
+		{Username: "玉米", NickName: "玉米", Password: "123456", Email: "corn@example.com"},
+		{Username: "花卷", NickName: "花卷", Password: "123456", Email: "flower@example.com"},
+		{Username: "吐司", NickName: "吐司", Password: "123456", Email: "toast@example.com"},
+	}
+
+	// 对每个用户的密码进行哈希处理
+	for _, user := range users {
+		hashedPassword, err := models.HashPassword(user.Password)
+		if err != nil {
+			slog.Error("密码哈希失败", "username", user.Username, "error", err)
+			return apperror.Wrap(err, 500, "密码哈希失败")
+		}
+		user.Password = hashedPassword
 	}
 
 	if err := userRepo.CreateBatch(users); err != nil {
@@ -83,7 +91,7 @@ func UpdateUser(id uint, name string) (*models.User, error) {
 		return nil, err
 	}
 
-	user.Name = name
+	user.Username = name
 
 	if err := userRepo.Update(user); err != nil {
 		slog.Error("更新用户失败", "id", id, "error", err)

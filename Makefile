@@ -50,4 +50,4 @@ logs:
 clean:
 	$(DOCKER_COMPOSE) down -v --remove-orphans
 
-restart: down up-build
+restart: down clean up-build

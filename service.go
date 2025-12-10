@@ -15,7 +15,7 @@ import (
 	"gojet/models"
 	"gojet/router"
 	"gojet/service"
-	"gojet/util/response"
+	"gojet/util/jwt"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -104,6 +104,7 @@ func NewService() (*Service, error) {
 	// 初始化数据访问层和业务层
 	userRepo := dao.NewUserRepository(db)
 	service.InitService(userRepo)
+	service.InitAuth(cfg)
 
 	// 初始化示例数据
 	logger.Info("正在初始化应用示例数据")
@@ -114,30 +115,26 @@ func NewService() (*Service, error) {
 	// 创建 Gin 路由实例
 	r := gin.New()
 
+	// 配置 JWT 白名单路由（不需要 token 的公开接口）
+	jwt.SkipRouter["login"] = true
+	jwt.SkipRouter["register"] = true
+	jwt.SkipRouter["health"] = true
+
 	// 添加中间件
 	r.Use(gin.Recovery())
 	r.Use(loggingMiddleware(logger))
 
-	// 健康检查接口 - 检查数据库连接状态
-	r.GET("/health", func(c *gin.Context) {
+	// 设置 JWT secret、数据库连接和配置到 gin 上下文
+	r.Use(func(c *gin.Context) {
+		c.Set("jwt-secret", cfg.JWT.Secret)
 		sqlDB, err := db.DB()
-		if err != nil {
-			response.Error(c, 503, "数据库连接失败")
-			return
+		if err == nil {
+			c.Set("db", sqlDB)
 		}
-
-		// 测试数据库连通性
-		if err := sqlDB.Ping(); err != nil {
-			response.Error(c, 503, "数据库 Ping 失败")
-			return
-		}
-
-		response.Success(c, "", gin.H{
-			"status":    "healthy",
-			"timestamp": time.Now().Format(time.RFC3339),
-			"version":   cfg.App.Version,
-		})
+		c.Set("config", cfg)
+		c.Next()
 	})
+	r.Use(jwt.Token)
 
 	// 设置应用的所有路由
 	router.SetupRoutes(r)
@@ -158,8 +155,6 @@ func NewService() (*Service, error) {
 
 func (s *Service) Start() error {
 	s.Logger.Info("服务器启动中", "端口", s.Config.App.Port)
-	s.Logger.Info("健康检查可用", "地址", fmt.Sprintf("http://localhost:%d/health", s.Config.App.Port))
-
 	return s.HTTPServer.ListenAndServe()
 }
 
