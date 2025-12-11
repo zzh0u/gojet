@@ -23,7 +23,18 @@ func InsertInitialData(c *gin.Context) {
 	response.Success(c, "数据插入成功", nil)
 }
 
-// DeleteUser 根据 ID 删除用户
+// DeleteUser
+// @Summary 	根据 ID 删除用户
+// @Description 根据 ID 删除系统用户
+// @Id 			DeleteUser
+// @Tags 		auth
+// @Param 		id 		path 		int true "用户ID"
+// @Success		200		{object}	response.Response{data=nil}	"删除成功"
+// @Failure 	400 	{object} 	response.Response "请求参数无效"
+// @Failure 	401 	{object} 	response.Response "认证失败"
+// @Failure 	404 	{object} 	response.Response "用户不存在"
+// @Failure 	500 	{object} 	response.Response "服务器内部错误"
+// @Router 		/v1/user/{id} [delete]
 func DeleteUser(c *gin.Context) {
 	var idParam IDParam
 	if err := c.ShouldBindUri(&idParam); err != nil {
@@ -38,7 +49,18 @@ func DeleteUser(c *gin.Context) {
 	response.Success(c, "删除成功", nil)
 }
 
-// GetUserByID 根据 ID 获取用户信息 - 返回单个用户详情
+// GetUserByID
+// @Summary 	根据 ID 获取用户信息
+// @Description 根据 ID 获取系统用户详情
+// @Id 			GetUserByID
+// @Tags 		auth
+// @Param 		id 		path 		int true "用户ID"
+// @Success		200		{object}	response.Response{data=models.User}	"用户详情"
+// @Failure 	400 	{object} 	response.Response "请求参数无效"
+// @Failure 	401 	{object} 	response.Response "认证失败"
+// @Failure 	404 	{object} 	response.Response "用户不存在"
+// @Failure 	500 	{object} 	response.Response "服务器内部错误"
+// @Router 		/v1/user/{id} [get]
 func GetUserByID(c *gin.Context) {
 	var idParam IDParam
 	if err := c.ShouldBindUri(&idParam); err != nil {
@@ -55,7 +77,15 @@ func GetUserByID(c *gin.Context) {
 	response.Success(c, "", user)
 }
 
-// GetAllUsers 获取所有用户列表 - 返回用户数组
+// GetAllUsers
+// @Summary 	获取所有用户列表
+// @Description 获取系统中所有用户的详细信息
+// @Id 			GetAllUsers
+// @Tags 		auth
+// @Success		200		{object}	response.Response{data=[]models.User}	"用户列表"
+// @Failure 	401 	{object} 	response.Response "认证失败"
+// @Failure 	500 	{object} 	response.Response "服务器内部错误"
+// @Router 		/v1/users [get]
 func GetAllUsers(c *gin.Context) {
 	users, err := service.GetAllUsers()
 	if err != nil {
@@ -65,7 +95,17 @@ func GetAllUsers(c *gin.Context) {
 	response.Success(c, "", users)
 }
 
-// CreateUser 创建新用户 - 从请求体获取用户信息
+// CreateUser
+// @Summary 	创建新用户
+// @Description 创建一个新的系统用户，从请求体获取用户信息
+// @Id 			CreateUser
+// @Tags 		auth
+// @Param 		user 	body 		models.User true "用户信息"
+// @Success		200		{object}	response.Response{data=models.User}	"创建成功"
+// @Failure 	400 	{object} 	response.Response "请求参数无效"
+// @Failure 	401 	{object} 	response.Response "认证失败"
+// @Failure 	500 	{object} 	response.Response "服务器内部错误"
+// @Router 		/v1/user [post]
 func CreateUser(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -93,7 +133,19 @@ type UpdateUserRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
-// UpdateUser 更新用户信息
+// UpdateUser
+// @Summary 	更新用户信息
+// @Description 根据 ID 更新系统用户的姓名
+// @Id 			UpdateUser
+// @Tags 		auth
+// @Param 		id 		path 		int true "用户ID"
+// @Param 		user 	body 		UpdateUserRequest true "更新用户信息"
+// @Success		200		{object}	response.Response{data=models.User}	"更新成功"
+// @Failure 	400 	{object} 	response.Response "请求参数无效"
+// @Failure 	401 	{object} 	response.Response "认证失败"
+// @Failure 	404 	{object} 	response.Response "用户不存在"
+// @Failure 	500 	{object} 	response.Response "服务器内部错误"
+// @Router 		/v1/user/{id} [put]
 func UpdateUser(c *gin.Context) {
 	var idParam IDParam
 	if err := c.ShouldBindUri(&idParam); err != nil {

@@ -112,7 +112,7 @@ func newService() (*Service, error) {
 	service.InitAuth(cfg)
 
 	// 初始化示例数据
-	logger.Info("正在初始化应用示例数据")
+	slog.Info("正在初始化应用示例数据")
 	if err := service.CreateInitialData(); err != nil {
 		return nil, fmt.Errorf("初始化示例数据失败: %w", err)
 	}
@@ -159,13 +159,13 @@ func newService() (*Service, error) {
 }
 
 func (s *Service) Start() error {
-	s.Logger.Info("服务器启动中", "端口", s.Config.App.Port)
+	slog.Info("服务器启动中", "端口", s.Config.App.Port)
 	return s.HTTPServer.ListenAndServe()
 }
 
 // Stop 关闭数据库连接
 func (s *Service) Stop() error {
-	s.Logger.Info("服务器正在关闭...")
+	slog.Info("服务器正在关闭...")
 
 	sqlDB, err := s.DB.DB()
 	if err != nil {
