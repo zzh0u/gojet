@@ -28,7 +28,7 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，包含简单的�
 - [PostgreSQL](https://www.postgresql.org/) - 关系型数据库
 - [Validator](https://github.com/go-playground/validator) v10 - 参数验证
 - [log/slog](https://pkg.go.dev/log/slog) - Go 标准库结构化日志
-- [JWT-Go](https://github.com/dgrijalva/jwt-go) - JWT 令牌生成和验证
+- [golang-jwt/jwt](https://github.com/golang-jwt/jwt) - JWT 令牌生成和验证（v5）
 - [Docker](https://www.docker.com/) - 容器化部署
 
 ## 项目结构
