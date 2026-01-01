@@ -8,18 +8,18 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，包含简单的�
 
 ## 功能特性
 
-- ✅ **完整的分层架构** - API、Service、DAO、Models 层分离
-- ✅ **RESTful API** - 符合 REST 规范的接口设计
-- ✅ **数据库支持** - GORM + PostgreSQL，自动迁移
-- ✅ **配置管理** - YAML + 环境变量双重配置
-- ✅ **结构化日志** - JSON 格式日志，支持日志级别
-- ✅ **健康检查** - HTTP 健康检查端点，包含数据库状态
-- ✅ **请求追踪** - 自动记录 HTTP 请求日志
-- ✅ **JWT 身份认证** - 基于 Token 的认证和授权，支持白名单路由
-- ✅ **Docker 支持** - 完整的 Docker 和 Docker Compose 配置
-- ✅ **代码质量工具** - Makefile 集成 golangci-lint 静态检查
-- ✅ **API 文档支持** - 支持 Swagger 文档生成（需安装 swag 工具并运行 make swag）
-- ✅ **统一响应处理** - 标准化的 API 响应格式和错误消息常量
+-  **完整的分层架构** - API、Service、DAO、Models 层分离
+-  **RESTFul API** - 符合 REST 规范的接口设计
+-  **数据库支持** - GORM + PostgreSQL，自动迁移
+-  **配置管理** - YAML + 环境变量双重配置
+-  **结构化日志** - JSON 格式日志，支持日志级别
+-  **健康检查** - HTTP 健康检查端点，包含数据库状态
+-  **请求追踪** - 自动记录 HTTP 请求日志
+-  **JWT 身份认证** - 基于 Token 的认证和授权，支持白名单路由
+-  **Docker 支持** - 完整的 Docker 和 Docker Compose 配置
+-  **代码质量工具** - Makefile 集成 golangci-lint 静态检查
+-  **API 文档支持** - 支持 Swagger 文档生成（需安装 swag 工具并运行 make swag）
+-  **统一响应处理** - 标准化的 API 响应格式和错误消息常量
 
 ## 技术栈
 
@@ -111,11 +111,6 @@ Copyright (c) 2025 gojet
 
 - [Gin Examples](https://github.com/gin-gonic/examples) - Gin 框架示例
 - [GORM Guides](https://gorm.io/docs/) - GORM 使用指南
-
-## 致谢
-
-- [Gin](https://github.com/gin-gonic/gin) - 高性能 HTTP Web 框架
-- [GORM](https://gorm.io) - 优秀的 ORM 框架
 - [PostgreSQL](https://www.postgresql.org/) - 强大的开源数据库
 
 **Happy Coding!**
