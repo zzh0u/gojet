@@ -4,7 +4,6 @@ import (
 	"gojet/dao"
 	"gojet/models"
 	"gojet/util/apperror"
-	"gojet/util/response"
 	"log/slog"
 )
 
@@ -20,7 +19,7 @@ func InitService(repo *dao.UserRepository) {
 func CreateUser(user *models.User) (*models.User, error) {
 	if err := userRepo.Create(user); err != nil {
 		slog.Error("创建用户失败", "用户", user.Username, "error", err)
-		return nil, apperror.Wrap(err, 500, response.MsgUserCreateFailed)
+		return nil, apperror.Wrap(err, 500, apperror.UserCreateFailed)
 	}
 
 	slog.Info("创建用户成功", "id", user.ID, "username", user.Username)
@@ -58,7 +57,7 @@ func CreateInitialData() error {
 
 	if err := userRepo.CreateBatch(users); err != nil {
 		slog.Error("创建初始数据失败", "error", err)
-		return apperror.Wrap(err, 500, response.MsgDBInsertError)
+		return apperror.Wrap(err, 500, apperror.DBInsertError)
 	}
 
 	slog.Info("初始数据创建成功", "count", len(users))
@@ -95,7 +94,7 @@ func UpdateUser(id uint, name string) (*models.User, error) {
 
 	if err := userRepo.Update(user); err != nil {
 		slog.Error("更新用户失败", "id", id, "error", err)
-		return nil, apperror.Wrap(err, 500, response.MsgUserUpdateFailed)
+		return nil, apperror.Wrap(err, 500, apperror.UserUpdateFailed)
 	}
 
 	slog.Info("更新用户成功", "id", id, "name", name)
@@ -106,7 +105,7 @@ func UpdateUser(id uint, name string) (*models.User, error) {
 func DeleteUser(id uint) error {
 	if err := userRepo.Delete(id); err != nil {
 		slog.Error("删除用户失败", "id", id, "error", err)
-		return apperror.Wrap(err, 500, response.MsgUserDeleteFailed)
+		return apperror.Wrap(err, 500, apperror.UserDeleteFailed)
 	}
 	slog.Info("删除用户成功", "id", id)
 	return nil

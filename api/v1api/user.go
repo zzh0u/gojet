@@ -3,6 +3,7 @@ package v1api
 import (
 	"gojet/models"
 	"gojet/service"
+	"gojet/util/apperror"
 	"gojet/util/response"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +39,7 @@ func InsertInitialData(c *gin.Context) {
 func DeleteUser(c *gin.Context) {
 	var idParam IDParam
 	if err := c.ShouldBindUri(&idParam); err != nil {
-		response.BadRequest(c, response.MsgInvalidUserID)
+		response.BadRequest(c, apperror.InvalidUserID)
 		return
 	}
 
@@ -64,7 +65,7 @@ func DeleteUser(c *gin.Context) {
 func GetUserByID(c *gin.Context) {
 	var idParam IDParam
 	if err := c.ShouldBindUri(&idParam); err != nil {
-		response.BadRequest(c, response.MsgInvalidUserID)
+		response.BadRequest(c, apperror.InvalidUserID)
 		return
 	}
 
@@ -109,7 +110,7 @@ func GetAllUsers(c *gin.Context) {
 func CreateUser(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
-		response.BadRequest(c, response.MsgInvalidParams)
+		response.BadRequest(c, apperror.InvalidParams)
 		return
 	}
 
@@ -149,13 +150,13 @@ type UpdateUserRequest struct {
 func UpdateUser(c *gin.Context) {
 	var idParam IDParam
 	if err := c.ShouldBindUri(&idParam); err != nil {
-		response.BadRequest(c, response.MsgInvalidUserID)
+		response.BadRequest(c, apperror.InvalidUserID)
 		return
 	}
 
 	var updateReq UpdateUserRequest
 	if err := c.ShouldBindJSON(&updateReq); err != nil {
-		response.BadRequest(c, response.MsgInvalidParams)
+		response.BadRequest(c, apperror.InvalidParams)
 		return
 	}
 

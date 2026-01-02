@@ -3,6 +3,7 @@ package v1api
 import (
 	"gojet/models"
 	"gojet/service"
+	"gojet/util/apperror"
 	"gojet/util/response"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +24,7 @@ import (
 func Login(ctx *gin.Context) {
 	var req service.LoginReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(ctx, response.MsgInvalidParams)
+		response.BadRequest(ctx, apperror.InvalidParams)
 		return
 	}
 
@@ -49,7 +50,7 @@ func Login(ctx *gin.Context) {
 func Register(ctx *gin.Context) {
 	var user models.User
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		response.BadRequest(ctx, response.MsgInvalidParams)
+		response.BadRequest(ctx, apperror.InvalidParams)
 		return
 	}
 

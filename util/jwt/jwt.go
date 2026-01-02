@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"gojet/util/apperror"
 	"gojet/util/response"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ func Token(c *gin.Context) {
 	}
 	header := c.Request.Header.Get("Authorization")
 	if len(header) == 0 {
-		response.Error(c, 403, response.MsgTokenMissing)
+		response.Error(c, 403, apperror.TokenMissing)
 		c.Abort()
 		return
 	}
@@ -52,7 +53,7 @@ func parseToken(tokenString string, secret string, c *gin.Context) {
 
 	// Parse error.
 	if err != nil {
-		response.Error(c, 403, response.MsgTokenInvalid)
+		response.Error(c, 403, apperror.TokenInvalid)
 		c.Abort()
 		return
 	}
@@ -65,7 +66,7 @@ func parseToken(tokenString string, secret string, c *gin.Context) {
 		c.Next()
 	} else {
 		// token 过期了
-		response.Error(c, 403, response.MsgTokenExpired)
+		response.Error(c, 403, apperror.TokenExpired)
 		c.Abort()
 	}
 }

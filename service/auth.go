@@ -4,7 +4,6 @@ import (
 	"gojet/config"
 	"gojet/util/apperror"
 	"gojet/util/jwt"
-	"gojet/util/response"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,12 +36,12 @@ type LoginResp struct {
 func (req *LoginReq) Login(ctx *gin.Context) (*LoginResp, error) {
 	user, err := userRepo.GetUserByUserName(req.Username)
 	if err != nil {
-		return nil, apperror.Wrap(err, 404, response.MsgUserNotFound)
+		return nil, apperror.Wrap(err, 404, apperror.UserNotFound)
 	}
 
 	// 验证密码
 	if !user.CompareSimple(req.Password) {
-		return nil, apperror.New(401, response.MsgAuthFailed)
+		return nil, apperror.New(401, apperror.AuthFailed)
 	}
 
 	// 设置token过期时间

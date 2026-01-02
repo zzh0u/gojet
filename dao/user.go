@@ -5,7 +5,6 @@ import (
 
 	"gojet/models"
 	"gojet/util/apperror"
-	"gojet/util/response"
 
 	"gorm.io/gorm"
 )
@@ -23,7 +22,7 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 func (r *UserRepository) Create(user *models.User) error {
 	result := r.db.Create(user)
 	if result.Error != nil {
-		return apperror.Wrap(result.Error, 500, response.MsgDBInsertError)
+		return apperror.Wrap(result.Error, 500, apperror.DBInsertError)
 	}
 	return nil
 }
@@ -32,7 +31,7 @@ func (r *UserRepository) Create(user *models.User) error {
 func (r *UserRepository) CreateBatch(users []*models.User) error {
 	result := r.db.CreateInBatches(users, len(users))
 	if result.Error != nil {
-		return apperror.Wrap(result.Error, 500, response.MsgDBInsertError)
+		return apperror.Wrap(result.Error, 500, apperror.DBInsertError)
 	}
 	return nil
 }
@@ -43,7 +42,7 @@ func (r *UserRepository) GetAll() ([]*models.User, error) {
 	// GORM 默认不会查询软删除的记录
 	result := r.db.Find(&users)
 	if result.Error != nil {
-		return nil, apperror.Wrap(result.Error, 500, response.MsgDBQueryError)
+		return nil, apperror.Wrap(result.Error, 500, apperror.DBQueryError)
 	}
 	return users, nil
 }
@@ -53,10 +52,10 @@ func (r *UserRepository) GetByID(id uint) (*models.User, error) {
 	var user models.User
 	result := r.db.First(&user, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, apperror.New(404, response.MsgRecordNotFound)
+		return nil, apperror.New(404, apperror.RecordNotFound)
 	}
 	if result.Error != nil {
-		return nil, apperror.Wrap(result.Error, 500, response.MsgDBQueryError)
+		return nil, apperror.Wrap(result.Error, 500, apperror.DBQueryError)
 	}
 	return &user, nil
 }
@@ -66,10 +65,10 @@ func (r *UserRepository) GetUserByUserName(username string) (*models.User, error
 	var user models.User
 	result := r.db.Where("username = ?", username).First(&user)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, apperror.New(404, response.MsgRecordNotFound)
+		return nil, apperror.New(404, apperror.RecordNotFound)
 	}
 	if result.Error != nil {
-		return nil, apperror.Wrap(result.Error, 500, response.MsgDBQueryError)
+		return nil, apperror.Wrap(result.Error, 500, apperror.DBQueryError)
 	}
 	return &user, nil
 }
@@ -78,7 +77,7 @@ func (r *UserRepository) GetUserByUserName(username string) (*models.User, error
 func (r *UserRepository) Update(user *models.User) error {
 	result := r.db.Save(user)
 	if result.Error != nil {
-		return apperror.Wrap(result.Error, 500, response.MsgDBUpdateError)
+		return apperror.Wrap(result.Error, 500, apperror.DBUpdateError)
 	}
 	return nil
 }
@@ -87,7 +86,7 @@ func (r *UserRepository) Update(user *models.User) error {
 func (r *UserRepository) Delete(id uint) error {
 	result := r.db.Delete(&models.User{}, id)
 	if result.Error != nil {
-		return apperror.Wrap(result.Error, 500, response.MsgDBDeleteError)
+		return apperror.Wrap(result.Error, 500, apperror.DBDeleteError)
 	}
 	return nil
 }

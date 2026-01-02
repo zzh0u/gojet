@@ -97,5 +97,5 @@ func HandleError(c *gin.Context, err error) {
 	}
 	// 非 Error 类型，记录日志并返回通用内部错误
 	slog.Error("未处理的应用错误", "error", err)
-	InternalServerError(c, MsgInternalError)
+	InternalServerError(c, apperror.InternalError)
 }
