@@ -19,3 +19,8 @@ logging:
   level: "debug"  # 日志级别: debug/info/warn/error
   output: "stdout"  # 日志输出: stdout,file,both (开发环境用stdout,生产环境建议both)
   file_path: "./logs/app.log"  # 日志文件路径（当output为file或both时生效）
+
+# JWT 配置
+jwt:
+  secret: "jwt 字符串，建议使用 openssl rand -base64 64 生成"
+  expire_hours: 24  # Token 过期时间（小时）

@@ -13,6 +13,7 @@ type Config struct {
 	App      AppConfig      `yaml:"app"`      // 应用配置
 	Database DatabaseConfig `yaml:"database"` // 数据库配置
 	Logging  LoggingConfig  `yaml:"logging"`  // 日志配置
+	JWT      JWTConfig      `yaml:"jwt"`      // JWT 配置
 }
 
 // AppConfig 应用配置 - 定义应用的基本信息
@@ -38,6 +39,12 @@ type LoggingConfig struct {
 	Level    string `yaml:"level"`     // 日志级别 (debug/info/warn/error)
 	Output   string `yaml:"output"`    // 日志输出位置 (stdout/file/both)
 	FilePath string `yaml:"file_path"` // 日志文件路径
+}
+
+// JWTConfig JWT 配置 - 定义 JWT token 相关参数
+type JWTConfig struct {
+	Secret      string `yaml:"secret"`       // JWT 签名密钥
+	ExpireHours int    `yaml:"expire_hours"` // Token 过期时间（小时）
 }
 
 // LoadConfig 加载配置 - 从 YAML 文件和环境变量读取配置
@@ -107,6 +114,16 @@ func (c *Config) overrideWithEnv() {
 	}
 	if val := os.Getenv("LOG_FILE_PATH"); val != "" {
 		c.Logging.FilePath = val
+	}
+
+	// JWT 配置
+	if val := os.Getenv("JWT_SECRET"); val != "" {
+		c.JWT.Secret = val
+	}
+	if val := os.Getenv("JWT_EXPIRE_HOURS"); val != "" {
+		if hours, err := strconv.Atoi(val); err == nil {
+			c.JWT.ExpireHours = hours
+		}
 	}
 }
 
