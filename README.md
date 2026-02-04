@@ -83,7 +83,7 @@ make clean              # 清理 Docker Compose 容器和数据卷
 # 查看服务状态可使用: docker-compose ps 或 docker ps
 ```
 
-**注意**：使用 `make goimports` 和 `make swag` 前，需要先安装相应工具。
+> 使用 `make goimports` 和 `make swag` 前，需要先安装相应工具。
 
 ### 代码规范
 
