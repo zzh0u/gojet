@@ -24,12 +24,13 @@ type LoginReq struct {
 
 // LoginResp 登录响应数据
 type LoginResp struct {
-	Userid      int     `json:"userid"`       // 用户ID
-	Username    string  `json:"username"`     // 用户名称
-	NickName    string  `json:"nick_name"`    // 用户别名
-	AccessToken string  `json:"access_token"` // accessToken
-	ExpiresIn   float64 `json:"expires_in"`   // 过期时间
-	TokenType   string  `json:"token_type"`   // token类型
+	Userid       int     `json:"userid"`        // 用户 ID
+	Username     string  `json:"username"`      // 用户名
+	NickName     string  `json:"nick_name"`     // 用户别名
+	AccessToken  string  `json:"access_token"`  // access token
+	RefreshToken string  `json:"refresh_token"` // refresh token
+	ExpiresIn    float64 `json:"expires_in"`    // access token 过期时间（秒）
+	TokenType    string  `json:"token_type"`    // token 类型
 }
 
 // Login 执行登录逻辑
@@ -44,27 +45,35 @@ func (req *LoginReq) Login(ctx *gin.Context) (*LoginResp, error) {
 		return nil, apperror.New(401, apperror.AuthFailed)
 	}
 
-	// 设置token过期时间
-	var duration = time.Duration(cfg.JWT.ExpireHours) * time.Hour
-
-	// 生成JWT token
+	// 从 Gin 上下文获取 JWT 密钥
 	secret, exists := ctx.Get("jwt-secret")
 	if !exists {
 		return nil, apperror.New(500, "JWT secret 未配置")
 	}
+	jwtSecret := secret.(string)
 
-	token, err := jwt.Sign(jwt.Context{ID: user.ID, Username: user.Username}, secret.(string), duration)
+	// 生成 access token
+	accessDuration := time.Duration(cfg.JWT.AccessExpireHours) * time.Hour
+	accessToken, err := jwt.SignAccess(jwt.Context{ID: user.ID, Username: user.Username}, jwtSecret, accessDuration)
 	if err != nil {
-		return nil, apperror.Wrap(err, 500, "生成Token失败")
+		return nil, apperror.Wrap(err, 500, "生成 Access Token 失败")
+	}
+
+	// 生成 refresh token
+	refreshDuration := time.Duration(cfg.JWT.RefreshExpireDays) * 24 * time.Hour
+	refreshToken, err := jwt.SignRefresh(jwt.Context{ID: user.ID, Username: user.Username}, jwtSecret, refreshDuration)
+	if err != nil {
+		return nil, apperror.Wrap(err, 500, "生成 Refresh Token 失败")
 	}
 
 	resp := &LoginResp{
-		Userid:      user.ID,
-		Username:    user.Username,
-		NickName:    user.NickName,
-		AccessToken: token,
-		TokenType:   "Bearer",
-		ExpiresIn:   duration.Seconds(),
+		Userid:       user.ID,
+		Username:     user.Username,
+		NickName:     user.NickName,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    accessDuration.Seconds(),
 	}
 	return resp, nil
 }

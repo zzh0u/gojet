@@ -43,8 +43,9 @@ type LoggingConfig struct {
 
 // JWTConfig JWT 配置 - 定义 JWT token 相关参数
 type JWTConfig struct {
-	Secret      string `yaml:"secret"`       // JWT 签名密钥
-	ExpireHours int    `yaml:"expire_hours"` // Token 过期时间（小时）
+	Secret            string `yaml:"secret"`              // JWT 签名密钥
+	AccessExpireHours int    `yaml:"access_expire_hours"` // Access Token 过期时间（小时）
+	RefreshExpireDays int    `yaml:"refresh_expire_days"` // Refresh Token 过期时间（天）
 }
 
 // LoadConfig 加载配置 - 从 YAML 文件和环境变量读取配置
@@ -120,16 +121,22 @@ func (c *Config) overrideWithEnv() {
 	if val := os.Getenv("JWT_SECRET"); val != "" {
 		c.JWT.Secret = val
 	}
-	if val := os.Getenv("JWT_EXPIRE_HOURS"); val != "" {
+	// access token 过期时间
+	if val := os.Getenv("JWT_ACCESS_EXPIRE_HOURS"); val != "" {
 		if hours, err := strconv.Atoi(val); err == nil {
-			c.JWT.ExpireHours = hours
+			c.JWT.AccessExpireHours = hours
+		}
+	}
+	// refresh token 过期时间
+	if val := os.Getenv("JWT_REFRESH_EXPIRE_DAYS"); val != "" {
+		if days, err := strconv.Atoi(val); err == nil {
+			c.JWT.RefreshExpireDays = days
 		}
 	}
 }
 
 // GetDSN 获取数据库连接字符串 - 构建 PostgreSQL DSN 连接串
 func (db *DatabaseConfig) GetDSN() string {
-	// 按照 PostgreSQL 的 DSN 格式拼接连接参数
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s ",
 		db.Host, db.User, db.Password, db.DBName, db.Port, db.SSLMode)
 }

@@ -23,4 +23,5 @@ logging:
 # JWT 配置
 jwt:
   secret: "jwt 字符串，建议使用 openssl rand -base64 64 生成"
-  expire_hours: 24  # Token 过期时间（小时）
+  access_expire_hours: 24  # Access Token 过期时间（小时）
+  refresh_expire_days: 7   # Refresh Token 过期时间（天）

@@ -113,7 +113,7 @@ func newService() (*Service, error) {
 
 	// 初始化示例数据
 	slog.Info("正在初始化应用示例数据")
-	if err := service.CreateInitialData(); err != nil {
+	if err = service.CreateInitialData(); err != nil {
 		return nil, fmt.Errorf("初始化示例数据失败: %w", err)
 	}
 

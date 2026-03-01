@@ -24,7 +24,7 @@ func SetupRoutes(r *gin.Engine) {
 			users.PUT("/:id", v1api.UpdateUser)
 			users.DELETE("/:id", v1api.DeleteUser)
 		}
-		auth := apiV1.Group("")
+		auth := apiV1.Group("/auth")
 		{
 			auth.POST("/login", v1api.Login)
 			auth.POST("/register", v1api.Register)

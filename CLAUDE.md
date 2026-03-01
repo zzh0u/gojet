@@ -167,7 +167,7 @@ users.PUT("/:id/profile", v1api.UpdateProfile)
 - **请求/响应格式** - JSON 格式，统一响应结构：`{"code": 200, "message": "成功", "data": {...}}`
 - **错误消息** - 中文错误消息，通过 `util/apperror/` 定义业务错误码
 - **健康检查** - `/v1/health` 端点返回应用状态和数据库连接状态
-- **认证中间件** - JWT token 验证，白名单路由可跳过验证
+- **认证中间件** - JWT Access Token 验证，白名单路由可跳过验证（认证相关路由位于 `/v1/auth/` 路径下）
 - **请求日志** - 自动记录所有 HTTP 请求的详细信息
 
 **错误处理流程**：
@@ -177,11 +177,13 @@ users.PUT("/:id/profile", v1api.UpdateProfile)
 4. 中间件捕获 panic 并返回 500 错误
 
 **JWT 认证系统**：
+- **双层 Token 架构** - Access Token（短期） + Refresh Token（长期）
 - 密钥配置在 `config.yaml` 的 `jwt.secret`
-- Token 过期时间可配置（默认 24 小时）
-- 白名单路由：`/v1/login`, `/v1/register`, `/v1/health`
-- Token 存储在请求头：`Authorization: Bearer <token>`
-- 用户信息通过 `c.Get("user")` 在上下文中获取
+- Access Token 过期时间可配置（默认 24 小时），Refresh Token 过期时间可配置（默认 7 天）
+- 白名单路由：`/v1/auth/login`, `/v1/auth/register`, `/v1/health`
+- Token 存储在请求头：`Authorization: Bearer <access_token>`
+- 用户信息通过 `c.Get("userid")` 和 `c.Get("username")` 在上下文中获取
+- 登录接口返回双层 Token：Access Token 用于 API 调用，Refresh Token 用于长期保持登录状态
 
 ## 日志系统
 
@@ -319,7 +321,7 @@ go test ./...
 
 3. **代码规范** - 代码库使用中文注释和 API 错误消息。添加新代码时保持这一约定。
 
-4. **JWT 认证** - **已实现**。JWT 认证系统完整集成，包含 token 生成、验证、白名单路由和用户上下文传递。
+4. **JWT 认证** - **已实现**。JWT 认证系统完整集成，采用双层 Token 架构（Access Token + Refresh Token），包含 token 生成、验证、白名单路由和用户上下文传递。登录接口返回双层 Token，支持长期保持登录状态。
 
 5. **优先级功能**（根据 TODO.md）：
    - ✅ **高优先级已完成**：JWT 用户认证

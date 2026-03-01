@@ -15,7 +15,7 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，包含简单的�
 - **结构化日志** - JSON 格式日志，支持日志级别
 - **健康检查** - HTTP 健康检查端点，包含数据库状态
 - **请求追踪** - 自动记录 HTTP 请求日志
-- **JWT 身份认证** - 基于 Token 的认证和授权，支持白名单路由
+- **JWT 身份认证** - 基于双层 Token 的认证系统
 - **Docker 支持** - 完整的 Docker 和 Docker Compose 配置
 - **代码质量工具** - Makefile 集成 golangci-lint 静态检查
 - **API 文档支持** - 支持 Swagger 文档生成（需安装 swag 工具并运行 make swag）
