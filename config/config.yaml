@@ -25,3 +25,10 @@ jwt:
   secret: "jwt 字符串，建议使用 openssl rand -base64 64 生成"
   access_expire_hours: 24  # Access Token 过期时间（小时）
   refresh_expire_days: 7   # Refresh Token 过期时间（天）
+
+# Redis 配置
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""  # 无密码留空
+  db: 0         # Redis 数据库编号（0-15）

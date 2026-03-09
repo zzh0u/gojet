@@ -74,7 +74,7 @@ func GetAllUsers() ([]*models.User, error) {
 }
 
 // GetUserByID 根据 ID 获取用户
-func GetUserByID(id uint) (*models.User, error) {
+func GetUserByID(id int) (*models.User, error) {
 	user, err := userRepo.GetByID(id)
 	if err != nil {
 		// DAO 层已经包装了错误，直接返回
@@ -84,7 +84,7 @@ func GetUserByID(id uint) (*models.User, error) {
 }
 
 // UpdateUser 更新用户信息
-func UpdateUser(id uint, name string) (*models.User, error) {
+func UpdateUser(id int, name string) (*models.User, error) {
 	user, err := userRepo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func UpdateUser(id uint, name string) (*models.User, error) {
 }
 
 // DeleteUser 删除用户
-func DeleteUser(id uint) error {
+func DeleteUser(id int) error {
 	if err := userRepo.Delete(id); err != nil {
 		slog.Error("删除用户失败", "id", id, "error", err)
 		return apperror.Wrap(err, 500, apperror.UserDeleteFailed)

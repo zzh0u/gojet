@@ -14,6 +14,7 @@ type Config struct {
 	Database DatabaseConfig `yaml:"database"` // 数据库配置
 	Logging  LoggingConfig  `yaml:"logging"`  // 日志配置
 	JWT      JWTConfig      `yaml:"jwt"`      // JWT 配置
+	Redis    RedisConfig    `yaml:"redis"`    // Redis 配置
 }
 
 // AppConfig 应用配置 - 定义应用的基本信息
@@ -46,6 +47,14 @@ type JWTConfig struct {
 	Secret            string `yaml:"secret"`              // JWT 签名密钥
 	AccessExpireHours int    `yaml:"access_expire_hours"` // Access Token 过期时间（小时）
 	RefreshExpireDays int    `yaml:"refresh_expire_days"` // Refresh Token 过期时间（天）
+}
+
+// RedisConfig Redis 配置 - 定义 Redis 连接参数
+type RedisConfig struct {
+	Host     string `yaml:"host"`     // Redis 主机地址
+	Port     int    `yaml:"port"`     // Redis 端口
+	Password string `yaml:"password"` // Redis 密码（无密码留空）
+	DB       int    `yaml:"db"`       // Redis 数据库编号
 }
 
 // LoadConfig 加载配置 - 从 YAML 文件和环境变量读取配置
@@ -131,6 +140,24 @@ func (c *Config) overrideWithEnv() {
 	if val := os.Getenv("JWT_REFRESH_EXPIRE_DAYS"); val != "" {
 		if days, err := strconv.Atoi(val); err == nil {
 			c.JWT.RefreshExpireDays = days
+		}
+	}
+
+	// Redis 配置
+	if val := os.Getenv("REDIS_HOST"); val != "" {
+		c.Redis.Host = val
+	}
+	if val := os.Getenv("REDIS_PORT"); val != "" {
+		if port, err := strconv.Atoi(val); err == nil {
+			c.Redis.Port = port
+		}
+	}
+	if val := os.Getenv("REDIS_PASSWORD"); val != "" {
+		c.Redis.Password = val
+	}
+	if val := os.Getenv("REDIS_DB"); val != "" {
+		if db, err := strconv.Atoi(val); err == nil {
+			c.Redis.DB = db
 		}
 	}
 }

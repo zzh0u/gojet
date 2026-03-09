@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"gojet/cache"
 	"gojet/config"
 	"gojet/dao"
 	"gojet/models"
@@ -30,7 +31,7 @@ func server() {
 		os.Exit(1)
 	}
 
-	if err := newService.Start(); err != nil {
+	if err = newService.Start(); err != nil {
 		slog.Error("启动服务失败", "错误", err)
 		os.Exit(1)
 	}
@@ -42,6 +43,7 @@ type Service struct {
 	DB         *gorm.DB
 	Logger     *slog.Logger
 	HTTPServer *http.Server
+	Redis      *cache.RedisClient
 }
 
 func newService() (*Service, error) {
@@ -62,7 +64,7 @@ func newService() (*Service, error) {
 		logLevel = slog.LevelInfo
 	}
 
-	// 根据配置创建日志处理器（统一使用JSON格式）
+	// 根据配置创建日志处理器（统一使用 JSON 格式）
 	var (
 		handler slog.Handler
 		writer  io.Writer
@@ -102,22 +104,32 @@ func newService() (*Service, error) {
 	}
 
 	// 自动迁移数据库表结构
-	if err := db.AutoMigrate(&models.User{}); err != nil {
+	if err = db.AutoMigrate(&models.User{}); err != nil {
 		return nil, fmt.Errorf("数据库迁移失败: %w", err)
 	}
 
-	// 初始化数据访问层和业务层
+	// 初始化 Redis 客户端
+	redisClient, err := cache.NewRedisClient(cfg.Redis)
+	if err != nil {
+		slog.Warn("Redis 连接失败，将跳过 Redis 相关功能", "错误", err)
+		redisClient = nil
+	} else {
+		slog.Info("Redis 连接成功")
+	}
+
 	userRepo := dao.NewUserRepository(db)
+	if redisClient != nil {
+		userRepo.SetCache(redisClient.GetClient())
+		slog.Info("用户缓存已启用")
+	}
 	service.InitService(userRepo)
 	service.InitAuth(cfg)
 
-	// 初始化示例数据
 	slog.Info("正在初始化应用示例数据")
 	if err = service.CreateInitialData(); err != nil {
 		return nil, fmt.Errorf("初始化示例数据失败: %w", err)
 	}
 
-	// 创建 Gin 路由实例
 	r := gin.New()
 
 	// 配置 JWT 白名单路由（不需要 token 的公开接口）
@@ -125,16 +137,17 @@ func newService() (*Service, error) {
 	jwt.SkipRouter["register"] = true
 	jwt.SkipRouter["health"] = true
 
-	// 添加中间件
 	r.Use(gin.Recovery())
 	r.Use(loggingMiddleware(logger))
 
-	// 设置 JWT secret、数据库连接和配置到 gin 上下文
 	r.Use(func(c *gin.Context) {
 		c.Set("jwt-secret", cfg.JWT.Secret)
 		sqlDB, err := db.DB()
 		if err == nil {
 			c.Set("db", sqlDB)
+		}
+		if redisClient != nil {
+			c.Set("redis", redisClient)
 		}
 		c.Set("config", cfg)
 		c.Next()
@@ -155,6 +168,7 @@ func newService() (*Service, error) {
 		DB:         db,
 		Logger:     logger,
 		HTTPServer: httpServer,
+		Redis:      redisClient,
 	}, nil
 }
 

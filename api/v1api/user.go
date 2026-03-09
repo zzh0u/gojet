@@ -43,7 +43,7 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 
-	if err := service.DeleteUser(uint(idParam.ID)); err != nil {
+	if err := service.DeleteUser(idParam.ID); err != nil {
 		response.HandleError(c, err)
 		return
 	}
@@ -69,7 +69,7 @@ func GetUserByID(c *gin.Context) {
 		return
 	}
 
-	user, err := service.GetUserByID(uint(idParam.ID))
+	user, err := service.GetUserByID(idParam.ID)
 	if err != nil {
 		// 使用 HandleError 统一处理，支持 400/404/500 等错误码
 		response.HandleError(c, err)
@@ -160,7 +160,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	updatedUser, err := service.UpdateUser(uint(idParam.ID), updateReq.Name)
+	updatedUser, err := service.UpdateUser(idParam.ID, updateReq.Name)
 	if err != nil {
 		response.HandleError(c, err)
 		return

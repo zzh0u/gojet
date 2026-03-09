@@ -3,7 +3,8 @@
     "allow": [
       "Bash(ls:*)",
       "Bash(find:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(go build:*)"
     ],
     "deny": [],
     "ask": []
