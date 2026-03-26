@@ -14,6 +14,8 @@ const (
 	UserUpdateFailed = "用户更新失败"
 	UserDeleteFailed = "用户删除失败"
 	InvalidUserID    = "无效的用户 ID"
+	UserNameExists   = "用户名已存在"
+	EmailExists      = "邮箱已存在"
 
 	// 数据库相关错误
 	DBQueryError  = "数据查询失败"
