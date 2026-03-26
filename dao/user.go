@@ -201,6 +201,43 @@ func (r *UserRepository) Delete(id int) error {
 	return nil
 }
 
+// GetUserByEmail 根据邮箱获取用户
+func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
+	ctx := context.Background()
+
+	// 如果有缓存，通过邮箱缓存键查询
+	if r.cache != nil {
+		key := fmt.Sprintf("%s%s", UserCachePrefix, "email:"+email)
+		cached, err := r.cache.Get(ctx, key).Result()
+		if err == nil {
+			var user models.User
+			if err = json.Unmarshal([]byte(cached), &user); err == nil {
+				return &user, nil
+			}
+		}
+	}
+
+	// 缓存未命中，从数据库获取
+	var user models.User
+	result := r.db.Where("email = ?", email).First(&user)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, apperror.New(404, apperror.RecordNotFound)
+	}
+	if result.Error != nil {
+		return nil, apperror.Wrap(result.Error, 500, apperror.DBQueryError)
+	}
+
+	// 写入缓存
+	if r.cache != nil {
+		data, _ := json.Marshal(&user)
+		r.cache.Set(ctx, userCacheKey(user.ID), data, UserCacheDuration)
+		key := fmt.Sprintf("%s%s", UserCachePrefix, "email:"+email)
+		r.cache.Set(ctx, key, data, UserCacheDuration)
+	}
+
+	return &user, nil
+}
+
 // invalidateCache 清除用户缓存
 func (r *UserRepository) invalidateCache(id int, username string) {
 	ctx := context.Background()

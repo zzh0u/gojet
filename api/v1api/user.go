@@ -131,7 +131,9 @@ func CreateUser(c *gin.Context) {
 
 // UpdateUserRequest 更新用户请求结构体
 type UpdateUserRequest struct {
-	Name string `json:"name" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	NickName string `json:"nick_name" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
 }
 
 // UpdateUser
@@ -160,7 +162,12 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	updatedUser, err := service.UpdateUser(idParam.ID, updateReq.Name)
+	serviceReq := service.UpdateUserRequest{
+		Username: updateReq.Username,
+		NickName: updateReq.NickName,
+		Email:    updateReq.Email,
+	}
+	updatedUser, err := service.UpdateUser(idParam.ID, serviceReq)
 	if err != nil {
 		response.HandleError(c, err)
 		return

@@ -17,6 +17,23 @@ func InitService(repo *dao.UserRepository) {
 
 // CreateUser 使用完整的用户信息创建用户
 func CreateUser(user *models.User) (*models.User, error) {
+	// 检查用户名是否已存在
+	existingUser, err := userRepo.GetUserByUserName(user.Username)
+	if err != nil && err.Error() != apperror.RecordNotFound {
+		return nil, apperror.Wrap(err, 500, apperror.DBQueryError)
+	}
+	if existingUser != nil {
+		return nil, apperror.New(409, apperror.UserNameExists)
+	}
+
+	existingUserByEmail, err := userRepo.GetUserByEmail(user.Email)
+	if err != nil && err.Error() != apperror.RecordNotFound {
+		return nil, apperror.Wrap(err, 500, apperror.DBQueryError)
+	}
+	if existingUserByEmail != nil {
+		return nil, apperror.New(409, apperror.EmailExists)
+	}
+
 	if err := userRepo.Create(user); err != nil {
 		slog.Error("创建用户失败", "用户", user.Username, "error", err)
 		return nil, apperror.Wrap(err, 500, apperror.UserCreateFailed)
@@ -83,21 +100,54 @@ func GetUserByID(id int) (*models.User, error) {
 	return user, nil
 }
 
+// UpdateUserRequest 更新用户请求结构体
+type UpdateUserRequest struct {
+	Username string `json:"username" binding:"required"`
+	NickName string `json:"nick_name" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+}
+
 // UpdateUser 更新用户信息
-func UpdateUser(id int, name string) (*models.User, error) {
+func UpdateUser(id int, req UpdateUserRequest) (*models.User, error) {
 	user, err := userRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	user.Username = name
+	// 如果用户名有变化，检查新用户名是否已被其他用户使用
+	if user.Username != req.Username {
+		existingUser, err := userRepo.GetUserByUserName(req.Username)
+		if err != nil && err.Error() != apperror.RecordNotFound {
+			// 查询出错（不是记录不存在的错误）
+			return nil, apperror.Wrap(err, 500, apperror.DBQueryError)
+		}
+		// 如果找到的用户不是当前用户，说明用户名已被占用
+		if existingUser != nil && existingUser.ID != id {
+			return nil, apperror.New(409, apperror.UserNameExists)
+		}
+	}
+
+	// 如果邮箱有变化，检查新邮箱是否已被其他用户使用
+	if user.Email != req.Email {
+		existingUserByEmail, err := userRepo.GetUserByEmail(req.Email)
+		if err != nil && err.Error() != apperror.RecordNotFound {
+			return nil, apperror.Wrap(err, 500, apperror.DBQueryError)
+		}
+		if existingUserByEmail != nil && existingUserByEmail.ID != id {
+			return nil, apperror.New(409, apperror.EmailExists)
+		}
+	}
+
+	user.Username = req.Username
+	user.NickName = req.NickName
+	user.Email = req.Email
 
 	if err := userRepo.Update(user); err != nil {
 		slog.Error("更新用户失败", "id", id, "error", err)
 		return nil, apperror.Wrap(err, 500, apperror.UserUpdateFailed)
 	}
 
-	slog.Info("更新用户成功", "id", id, "name", name)
+	slog.Info("更新用户成功", "id", id, "name", req.Username)
 	return user, nil
 }
 
