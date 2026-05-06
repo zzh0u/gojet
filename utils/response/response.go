@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"gojet/util/apperror"
+	"gojet/utils/apperror"
 )
 
 // Response 统一响应结构体
@@ -41,6 +41,8 @@ func Error(c *gin.Context, code int, message string) {
 		httpCode = http.StatusForbidden
 	case 404:
 		httpCode = http.StatusNotFound
+	case 409:
+		httpCode = http.StatusConflict
 	case 500:
 		httpCode = http.StatusInternalServerError
 	}
@@ -76,7 +78,6 @@ func HandleError(c *gin.Context, err error) {
 	}
 	var e *apperror.Error
 	if errors.As(err, &e) {
-		// 记录错误日志，包含原始错误信息（如果有）
 		if e.Err != nil {
 			slog.Error("应用错误", "code", e.Code, "message", e.Message, "original_error", e.Err)
 		} else {
@@ -88,14 +89,12 @@ func HandleError(c *gin.Context, err error) {
 			BadRequest(c, e.Message)
 		case 404:
 			NotFound(c, e.Message)
-		case 500:
-			InternalServerError(c, e.Message)
 		default:
-			InternalServerError(c, e.Message)
+			Error(c, e.Code, e.Message)
 		}
 		return
 	}
-	// 非 Error 类型，记录日志并返回通用内部错误
+
 	slog.Error("未处理的应用错误", "error", err)
 	InternalServerError(c, apperror.InternalError)
 }

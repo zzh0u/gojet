@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"gojet/config"
-	"gojet/util/response"
+	"gojet/utils/response"
 
 	"github.com/gin-gonic/gin"
 )

@@ -32,9 +32,10 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，包含简单的�
 ├── models/               # 数据模型定义
 ├── config/               # 配置文件
 ├── router/               # 路由配置
-├── util/                 # 工具类
+├── middleware/           # Gin 中间件（鉴权、日志、上下文注入）
+├── utils/                # 通用工具类
 │   ├── apperror/         # 业务错误定义
-│   ├── jwt/              # JWT 工具（令牌生成、验证、中间件）
+│   ├── jwt/              # JWT 工具（令牌生成、解析）
 │   └── response/         # 统一响应处理
 ├── main.go               # 应用入口
 ├── service.go            # 服务启动和依赖注入逻辑

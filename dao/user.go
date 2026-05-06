@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"gojet/models"
-	"gojet/util/apperror"
+	"gojet/utils/apperror"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"

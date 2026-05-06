@@ -3,7 +3,7 @@ package service
 import (
 	"gojet/dao"
 	"gojet/models"
-	"gojet/util/apperror"
+	"gojet/utils/apperror"
 	"log/slog"
 )
 

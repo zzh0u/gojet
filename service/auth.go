@@ -2,8 +2,8 @@ package service
 
 import (
 	"gojet/config"
-	"gojet/util/apperror"
-	"gojet/util/jwt"
+	"gojet/utils/apperror"
+	"gojet/utils/jwt"
 	"time"
 
 	"github.com/gin-gonic/gin"

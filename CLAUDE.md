@@ -79,9 +79,10 @@ go tool cover -html=coverage.out
 - **dao/** - 数据库操作，继承 `dao.BaseRepository` 模式
 - **service/** - 业务逻辑实现，通过全局函数注册
 - **api/v1api/** - HTTP 处理器，包含参数验证和统一响应格式化
-- **router/** - 路由定义，包含 JWT 中间件和白名单配置
+- **router/** - 路由定义
 - **config/** - YAML 配置文件，支持环境变量覆盖
-- **util/** - 响应处理、错误工具和 JWT 中间件
+- **middleware/** - Gin 中间件，如 JWT 鉴权、请求日志、上下文注入
+- **utils/** - 响应处理、错误工具和 JWT 辅助函数
 
 ### 关键文件
 
@@ -90,9 +91,10 @@ go tool cover -html=coverage.out
 - `router/router.go` - 路由设置和中间件配置
 - `config/config.yaml` - 默认配置文件
 - `config/config.go` - 配置结构定义和加载逻辑
-- `util/response/response.go` - 统一响应处理
-- `util/apperror/error.go` - 业务错误定义
-- `util/jwt/jwt.go` - JWT 中间件和工具
+- `utils/response/response.go` - 统一响应处理
+- `utils/apperror/error.go` - 业务错误定义
+- `utils/jwt/jwt.go` - JWT 工具
+- `middleware/auth.go` - JWT 鉴权中间件
 
 ### Service 启动流程
 
@@ -118,7 +120,7 @@ go tool cover -html=coverage.out
 1. **定义数据模型** - 在 `models/` 目录创建 Go 结构体，包含 GORM 标签和验证标签
 2. **创建数据访问层** - 在 `dao/` 目录实现数据库操作，继承 `dao.BaseRepository` 模式
 3. **实现业务逻辑** - 在 `service/` 目录编写业务逻辑，通过 `service.InitService()` 注册
-4. **添加 API 端点** - 在 `api/v1api/` 目录创建 HTTP 处理器，使用 `util/response/` 返回统一格式
+4. **添加 API 端点** - 在 `api/v1api/` 目录创建 HTTP 处理器，使用 `utils/response/` 返回统一格式
 5. **配置路由** - 在 `router/router.go` 中添加路由定义，支持 JWT 中间件和白名单
 6. **初始化组件** - 在 `service.go` 的 `newService()` 函数中初始化新组件
 
@@ -165,7 +167,7 @@ users.PUT("/:id/profile", v1api.UpdateProfile)
 
 - **RESTful 端点** - 所有 API 位于 `/v1/` 路径下
 - **请求/响应格式** - JSON 格式，统一响应结构：`{"code": 200, "message": "成功", "data": {...}}`
-- **错误消息** - 中文错误消息，通过 `util/apperror/` 定义业务错误码
+- **错误消息** - 中文错误消息，通过 `utils/apperror/` 定义业务错误码
 - **健康检查** - `/v1/health` 端点返回应用状态和数据库连接状态
 - **认证中间件** - JWT Access Token 验证，白名单路由可跳过验证（认证相关路由位于 `/v1/auth/` 路径下）
 - **请求日志** - 自动记录所有 HTTP 请求的详细信息
@@ -267,7 +269,7 @@ go test ./...
 1. **定义数据模型** (`models/`) - 包含 GORM 标签和验证标签
 2. **创建数据访问层** (`dao/`) - 继承 `dao.BaseRepository` 模式
 3. **实现业务逻辑** (`service/`) - 通过 `service.InitService()` 注册
-4. **添加 API 端点** (`api/v1api/`) - 使用 `util/response/` 返回统一格式
+4. **添加 API 端点** (`api/v1api/`) - 使用 `utils/response/` 返回统一格式
 5. **配置路由** (`router/router.go`) - 支持 JWT 中间件和白名单
 6. **运行自动迁移** - 重启应用时自动创建表结构
 
@@ -330,7 +332,7 @@ go test ./...
    - ⚠️ **待添加**：Husky 配置
    - ⚠️ **待配置**：数据库 Schema 权限
 
-6. **错误处理** - 使用 `util/apperror/` 中的自定义错误处理系统，包含业务错误码和中文错误消息。通过 `util/response/` 返回统一格式。
+6. **错误处理** - 使用 `utils/apperror/` 中的自定义错误处理系统，包含业务错误码和中文错误消息。通过 `utils/response/` 返回统一格式。
 
 7. **测试覆盖** - 目前项目中没有测试文件。添加测试时遵循 Go 测试约定，创建 `*_test.go` 文件。
 

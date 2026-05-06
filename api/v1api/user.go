@@ -3,8 +3,8 @@ package v1api
 import (
 	"gojet/models"
 	"gojet/service"
-	"gojet/util/apperror"
-	"gojet/util/response"
+	"gojet/utils/apperror"
+	"gojet/utils/response"
 
 	"github.com/gin-gonic/gin"
 )

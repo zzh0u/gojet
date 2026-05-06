@@ -9,15 +9,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"gojet/cache"
 	"gojet/config"
 	"gojet/dao"
+	"gojet/middleware"
 	"gojet/models"
 	"gojet/router"
 	"gojet/service"
-	"gojet/util/jwt"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -132,27 +131,10 @@ func newService() (*Service, error) {
 
 	r := gin.New()
 
-	// 配置 JWT 白名单路由（不需要 token 的公开接口）
-	jwt.SkipRouter["login"] = true
-	jwt.SkipRouter["register"] = true
-	jwt.SkipRouter["health"] = true
-
 	r.Use(gin.Recovery())
-	r.Use(loggingMiddleware(logger))
-
-	r.Use(func(c *gin.Context) {
-		c.Set("jwt-secret", cfg.JWT.Secret)
-		sqlDB, err := db.DB()
-		if err == nil {
-			c.Set("db", sqlDB)
-		}
-		if redisClient != nil {
-			c.Set("redis", redisClient)
-		}
-		c.Set("config", cfg)
-		c.Next()
-	})
-	r.Use(jwt.Token)
+	r.Use(middleware.Logging(logger))
+	r.Use(middleware.InjectDependencies(db, redisClient, cfg))
+	r.Use(middleware.JWT(cfg.JWT.Secret, "login", "register", "health"))
 
 	// 设置应用的所有路由
 	router.SetupRoutes(r)
@@ -200,24 +182,4 @@ func fileWriter(filePath string) (*os.File, error) {
 		return nil, fmt.Errorf("打开日志文件失败: %w", err)
 	}
 	return f, nil
-}
-
-// loggingMiddleware 请求日志中间件 - 记录 HTTP 请求详情
-func loggingMiddleware(logger *slog.Logger) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		start := time.Now()
-
-		c.Next()
-
-		// 记录请求详情
-		duration := time.Since(start)
-		logger.Info("HTTP Request",
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
-			"status", c.Writer.Status(),
-			"duration", duration.String(),
-			"user_agent", c.Request.UserAgent(),
-			"ip", c.ClientIP(),
-		)
-	}
 }
