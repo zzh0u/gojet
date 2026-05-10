@@ -24,10 +24,10 @@ services:
       - REDIS_DB=0
       - LOG_LEVEL=info  # 生产环境使用info级别
       - LOG_OUTPUT=both  # 同时输出到控制台和文件
-      - LOG_FILE_PATH=./logs/app.log
+      - LOG_FILE_PATH=/root/logs/app.log
     volumes:
-      - ./config:/app/config:ro
-      - ./logs:/app/logs  # 日志持久化挂载
+      - ./config:/root/config:ro
+      - ./logs/app:/root/logs  # 应用日志持久化挂载
     restart: unless-stopped
     depends_on:
       postgres:
@@ -54,6 +54,21 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./logs/postgres:/var/log/postgresql
+    command:
+      - postgres
+      - -c
+      - logging_collector=on
+      - -c
+      - log_destination=stderr
+      - -c
+      - log_directory=/var/log/postgresql
+      - -c
+      - log_filename=postgresql-%Y-%m-%d.log
+      - -c
+      - log_rotation_age=1d
+      - -c
+      - log_rotation_size=10MB
     restart: unless-stopped
     networks:
       - gojet-network
@@ -65,6 +80,13 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+      - ./logs/redis:/data/logs
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --logfile
+      - /data/logs/redis.log
     restart: unless-stopped
     networks:
       - gojet-network
