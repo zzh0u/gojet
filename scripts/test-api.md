@@ -21,8 +21,8 @@ curl -X GET "${BASE_URL}/v1/health"
 curl -X POST "${BASE_URL}/v1/auth/login" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "zhou",
-    "password": "12345"
+    "username": "包子",
+    "password": "123456"
   }'
 ```
 
@@ -61,8 +61,8 @@ curl -X PUT "${BASE_URL}/v1/user/1" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${TOKEN}" \
   -d '{
-    "username": "zhou-updated",
-    "nick_name": "zhou Updated",
+    "username": "alice-updated",
+    "nick_name": "alice Updated",
     "email": "updated@example.com"
   }'
 ```
