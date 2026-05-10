@@ -27,7 +27,6 @@ func SetupRoutes(r *gin.Engine) {
 		auth := apiV1.Group("/auth")
 		{
 			auth.POST("/login", v1api.Login)
-			auth.POST("/register", v1api.Register)
 		}
 	}
 }

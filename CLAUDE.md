@@ -179,10 +179,11 @@ users.PUT("/:id/profile", v1api.UpdateProfile)
 4. 中间件捕获 panic 并返回 500 错误
 
 **JWT 认证系统**：
-- **双层 Token 架构** - Access Token（短期） + Refresh Token（长期）
+- 双层 Token 架构 - Access Token（短期） + Refresh Token（长期）
 - 密钥配置在 `config.yaml` 的 `jwt.secret`
 - Access Token 过期时间可配置（默认 24 小时），Refresh Token 过期时间可配置（默认 7 天）
-- 白名单路由：`/v1/auth/login`, `/v1/auth/register`, `/v1/health`
+- 白名单路由：`/v1/auth/login`, `/v1/health`
+- 用户创建只通过受保护接口 `POST /v1/user` 完成，需要令牌
 - Token 存储在请求头：`Authorization: Bearer <access_token>`
 - 用户信息通过 `c.Get("userid")` 和 `c.Get("username")` 在上下文中获取
 - 登录接口返回双层 Token：Access Token 用于 API 调用，Refresh Token 用于长期保持登录状态
@@ -295,15 +296,6 @@ go test ./...
 
 ## 关键架构决策
 
-### Service.go 架构（待评估）
-根据 TODO.md，当前的 `service.go` 实现需要评估：
-- **位置**：Service 结构体在 main 包中实现
-- **职责**：负责所有组件的初始化和依赖注入
-- **待解决问题**：
-  - 是否应该将 Service 结构体移到独立的包中？
-  - 依赖注入方式是否过于复杂？
-  - 是否应该使用更轻量级的初始化方式？
-
 ### 依赖注入模式
 - **当前实现**：通过 `service.go` 中的 `Service` 结构体管理所有依赖
 - **依赖传递**：数据库连接和配置通过 Gin 上下文传递：`c.Set("db", sqlDB)`, `c.Set("config", cfg)`
@@ -325,19 +317,10 @@ go test ./...
 
 4. **JWT 认证** - **已实现**。JWT 认证系统完整集成，采用双层 Token 架构（Access Token + Refresh Token），包含 token 生成、验证、白名单路由和用户上下文传递。登录接口返回双层 Token，支持长期保持登录状态。
 
-5. **优先级功能**（根据 TODO.md）：
-   - ✅ **高优先级已完成**：JWT 用户认证
-   - ⚠️ **待评估**：`service.go` 架构合理性评估
-   - ⚠️ **待实现**：所有层的单元测试
-   - ⚠️ **待添加**：Husky 配置
-   - ⚠️ **待配置**：数据库 Schema 权限
+5. **错误处理** - 使用 `utils/apperror/` 中的自定义错误处理系统，包含业务错误码和中文错误消息。通过 `utils/response/` 返回统一格式。
 
-6. **错误处理** - 使用 `utils/apperror/` 中的自定义错误处理系统，包含业务错误码和中文错误消息。通过 `utils/response/` 返回统一格式。
+6. **测试覆盖** - 目前项目中没有测试文件。添加测试时遵循 Go 测试约定，创建 `*_test.go` 文件。
 
-7. **测试覆盖** - 目前项目中没有测试文件。添加测试时遵循 Go 测试约定，创建 `*_test.go` 文件。
+7. **配置管理** - 支持 YAML 配置文件 + 环境变量覆盖。生产环境建议使用环境变量设置敏感信息（数据库密码、JWT 密钥等）。
 
-8. **数据库迁移** - 使用 GORM 自动迁移，在启动时自动创建/更新表结构。模型定义在 `models/` 目录。
-
-9. **配置管理** - 支持 YAML 配置文件 + 环境变量覆盖。生产环境建议使用环境变量设置敏感信息（数据库密码、JWT 密钥等）。
-
-10. **Docker 部署** - 提供完整的 Docker Compose 配置，支持开发和生产环境。日志通过卷挂载持久化。
+8. **Docker 部署** - 提供完整的 Docker Compose 配置，支持开发和生产环境。日志通过卷挂载持久化。

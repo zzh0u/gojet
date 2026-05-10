@@ -134,7 +134,7 @@ func newService() (*Service, error) {
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logging(logger))
 	r.Use(middleware.InjectDependencies(db, redisClient, cfg))
-	r.Use(middleware.JWT(cfg.JWT.Secret, "login", "register", "health"))
+	r.Use(middleware.JWT(cfg.JWT.Secret, "login", "health"))
 
 	// 设置应用的所有路由
 	router.SetupRoutes(r)

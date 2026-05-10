@@ -26,19 +26,6 @@ curl -X POST "${BASE_URL}/v1/auth/login" \
   }'
 ```
 
-## 用户注册
-
-```bash
-curl -X POST "${BASE_URL}/v1/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "zhou",
-    "nick_name": "zhou",
-    "password": "12345",
-    "email": "demo@example.com"
-  }'
-```
-
 ## 用户列表
 
 ```bash
