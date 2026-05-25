@@ -4,6 +4,9 @@ WORKDIR /app
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
+ENV GOPROXY=https://goproxy.cn,direct \
+    GOSUMDB=sum.golang.google.cn
+
 COPY go.mod go.sum ./
 RUN go mod download
 
