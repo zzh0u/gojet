@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gojet-config
+  namespace: gojet
+  labels:
+    app.kubernetes.io/name: gojet
+data:
+  # 应用运行配置。环境变量会覆盖镜像内 config/config.yaml 中的默认值。
+  APP_PORT: "8080"
+  APP_MODE: "release"
+
+  # Kubernetes Service 名称会自动成为集群内 DNS 名称。
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+  DB_NAME: "gojet"
+  DB_SSLMODE: "disable"
+
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+
+  # Kubernetes 推荐应用日志输出到 stdout/stderr，再由集群统一采集。
+  LOG_LEVEL: "info"
+  LOG_OUTPUT: "stdout"
+  LOG_FILE_PATH: "/root/logs/app.log"
+
+  JWT_ACCESS_EXPIRE_HOURS: "24"
+  JWT_REFRESH_EXPIRE_DAYS: "7"
+
