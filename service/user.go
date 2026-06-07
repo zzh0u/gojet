@@ -15,10 +15,33 @@ func InitService(repo *dao.UserRepository) {
 	userRepo = repo
 }
 
-// CreateUser 使用完整的用户信息创建用户
-func CreateUser(user *models.User) (*models.User, error) {
+// CreateUserRequest 创建用户请求结构体
+type CreateUserRequest struct {
+	Username string `json:"username" binding:"required"`
+	NickName string `json:"nick_name" binding:"required"`
+	Password string `json:"password" binding:"required,min=6"`
+	Email    string `json:"email" binding:"required,email"`
+}
+
+// UpdateUserRequest 更新用户请求结构体
+type UpdateUserRequest struct {
+	Username string `json:"username" binding:"required"`
+	NickName string `json:"nick_name" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+}
+
+// UserResponse 用户响应结构体
+type UserResponse struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	NickName string `json:"nick_name"`
+	Email    string `json:"email"`
+}
+
+// CreateUser 使用请求信息创建用户
+func CreateUser(req CreateUserRequest) (*UserResponse, error) {
 	// 检查用户名是否已存在
-	existingUser, err := userRepo.GetUserByUserName(user.Username)
+	existingUser, err := userRepo.GetUserByUserName(req.Username)
 	if err != nil && err.Error() != apperror.RecordNotFound {
 		return nil, apperror.Wrap(err, 500, apperror.DBQueryError)
 	}
@@ -26,7 +49,7 @@ func CreateUser(user *models.User) (*models.User, error) {
 		return nil, apperror.New(409, apperror.UserNameExists)
 	}
 
-	existingUserByEmail, err := userRepo.GetUserByEmail(user.Email)
+	existingUserByEmail, err := userRepo.GetUserByEmail(req.Email)
 	if err != nil && err.Error() != apperror.RecordNotFound {
 		return nil, apperror.Wrap(err, 500, apperror.DBQueryError)
 	}
@@ -34,13 +57,36 @@ func CreateUser(user *models.User) (*models.User, error) {
 		return nil, apperror.New(409, apperror.EmailExists)
 	}
 
-	if err := userRepo.Create(user); err != nil {
+	// 密码哈希处理
+	hashedPassword, err := models.HashPassword(req.Password)
+	if err != nil {
+		slog.Error("密码哈希失败", "username", req.Username, "error", err)
+		return nil, apperror.Wrap(err, 500, "密码加密失败")
+	}
+
+	// 创建用户模型
+	user := &models.User{
+		Username: req.Username,
+		NickName: req.NickName,
+		Password: hashedPassword,
+		Email:    req.Email,
+	}
+
+	if err = userRepo.Create(user); err != nil {
 		slog.Error("创建用户失败", "用户", user.Username, "error", err)
 		return nil, apperror.Wrap(err, 500, apperror.UserCreateFailed)
 	}
 
 	slog.Info("创建用户成功", "id", user.ID, "username", user.Username)
-	return user, nil
+
+	// 创建响应对象
+	userRes := &UserResponse{
+		ID:       user.ID,
+		Username: user.Username,
+		NickName: user.NickName,
+		Email:    user.Email,
+	}
+	return userRes, nil
 }
 
 // CreateInitialData 创建初始学生数据
@@ -72,7 +118,7 @@ func CreateInitialData() error {
 		user.Password = hashedPassword
 	}
 
-	if err := userRepo.CreateBatch(users); err != nil {
+	if err = userRepo.CreateBatch(users); err != nil {
 		slog.Error("创建初始数据失败", "error", err)
 		return apperror.Wrap(err, 500, apperror.DBInsertError)
 	}
@@ -82,33 +128,45 @@ func CreateInitialData() error {
 }
 
 // GetAllUsers 获取所有用户
-func GetAllUsers() ([]*models.User, error) {
+func GetAllUsers() ([]*UserResponse, error) {
 	users, err := userRepo.GetAll()
 	if err != nil {
 		return nil, apperror.Wrap(err, 500, "获取用户列表失败")
 	}
-	return users, nil
+
+	// 转换为响应结构体（不包含密码）
+	userResList := make([]*UserResponse, len(users))
+	for i, user := range users {
+		userResList[i] = &UserResponse{
+			ID:       user.ID,
+			Username: user.Username,
+			NickName: user.NickName,
+			Email:    user.Email,
+		}
+	}
+	return userResList, nil
 }
 
 // GetUserByID 根据 ID 获取用户
-func GetUserByID(id int) (*models.User, error) {
+func GetUserByID(id int) (*UserResponse, error) {
 	user, err := userRepo.GetByID(id)
 	if err != nil {
 		// DAO 层已经包装了错误，直接返回
 		return nil, err
 	}
-	return user, nil
-}
 
-// UpdateUserRequest 更新用户请求结构体
-type UpdateUserRequest struct {
-	Username string `json:"username" binding:"required"`
-	NickName string `json:"nick_name" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
+	// 创建响应对象（不包含密码）
+	userRes := &UserResponse{
+		ID:       user.ID,
+		Username: user.Username,
+		NickName: user.NickName,
+		Email:    user.Email,
+	}
+	return userRes, nil
 }
 
 // UpdateUser 更新用户信息
-func UpdateUser(id int, req UpdateUserRequest) (*models.User, error) {
+func UpdateUser(id int, req UpdateUserRequest) (*UserResponse, error) {
 	user, err := userRepo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -142,13 +200,21 @@ func UpdateUser(id int, req UpdateUserRequest) (*models.User, error) {
 	user.NickName = req.NickName
 	user.Email = req.Email
 
-	if err := userRepo.Update(user); err != nil {
+	if err = userRepo.Update(user); err != nil {
 		slog.Error("更新用户失败", "id", id, "error", err)
 		return nil, apperror.Wrap(err, 500, apperror.UserUpdateFailed)
 	}
 
 	slog.Info("更新用户成功", "id", id, "name", req.Username)
-	return user, nil
+
+	// 创建响应对象（不包含密码）
+	userRes := &UserResponse{
+		ID:       user.ID,
+		Username: user.Username,
+		NickName: user.NickName,
+		Email:    user.Email,
+	}
+	return userRes, nil
 }
 
 // DeleteUser 删除用户

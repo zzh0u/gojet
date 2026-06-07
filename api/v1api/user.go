@@ -1,7 +1,6 @@
 package v1api
 
 import (
-	"gojet/models"
 	"gojet/service"
 	"gojet/utils/apperror"
 	"gojet/utils/response"
@@ -56,7 +55,7 @@ func DeleteUser(c *gin.Context) {
 // @Id 			GetUserByID
 // @Tags 		auth
 // @Param 		id 		path 		int true "用户ID"
-// @Success		200		{object}	response.Response{data=models.User}	"用户详情"
+// @Success		200		{object}	response.Response{data=service.UserResponse}	"用户详情"
 // @Failure 	400 	{object} 	response.Response "请求参数无效"
 // @Failure 	401 	{object} 	response.Response "认证失败"
 // @Failure 	404 	{object} 	response.Response "用户不存在"
@@ -83,7 +82,7 @@ func GetUserByID(c *gin.Context) {
 // @Description 获取系统中所有用户的详细信息
 // @Id 			GetAllUsers
 // @Tags 		auth
-// @Success		200		{object}	response.Response{data=[]models.User}	"用户列表"
+// @Success		200		{object}	response.Response{data=[]service.UserResponse}	"用户列表"
 // @Failure 	401 	{object} 	response.Response "认证失败"
 // @Failure 	500 	{object} 	response.Response "服务器内部错误"
 // @Router 		/v1/users [get]
@@ -101,39 +100,25 @@ func GetAllUsers(c *gin.Context) {
 // @Description 创建一个新的系统用户，从请求体获取用户信息
 // @Id 			CreateUser
 // @Tags 		auth
-// @Param 		user 	body 		models.User true "用户信息"
-// @Success		200		{object}	response.Response{data=models.User}	"创建成功"
+// @Param 		user 	body 		service.CreateUserRequest true "用户信息"
+// @Success		200		{object}	response.Response{data=service.UserResponse}	"创建成功"
 // @Failure 	400 	{object} 	response.Response "请求参数无效"
 // @Failure 	401 	{object} 	response.Response "认证失败"
 // @Failure 	500 	{object} 	response.Response "服务器内部错误"
 // @Router 		/v1/user [post]
 func CreateUser(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var req service.CreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, apperror.InvalidParams)
 		return
 	}
 
-	hashedPassword, err := models.HashPassword(user.Password)
-	if err != nil {
-		response.Error(c, 500, "密码加密失败")
-		return
-	}
-	user.Password = hashedPassword
-
-	newUser, err := service.CreateUser(&user)
+	newUser, err := service.CreateUser(req)
 	if err != nil {
 		response.HandleError(c, err)
 		return
 	}
 	response.Success(c, "创建成功", newUser)
-}
-
-// UpdateUserRequest 更新用户请求结构体
-type UpdateUserRequest struct {
-	Username string `json:"username" binding:"required"`
-	NickName string `json:"nick_name" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
 }
 
 // UpdateUser
@@ -143,7 +128,7 @@ type UpdateUserRequest struct {
 // @Tags 		auth
 // @Param 		id 		path 		int true "用户ID"
 // @Param 		user 	body 		UpdateUserRequest true "更新用户信息"
-// @Success		200		{object}	response.Response{data=models.User}	"更新成功"
+// @Success		200		{object}	response.Response{data=service.UserResponse}	"更新成功"
 // @Failure 	400 	{object} 	response.Response "请求参数无效"
 // @Failure 	401 	{object} 	response.Response "认证失败"
 // @Failure 	404 	{object} 	response.Response "用户不存在"
@@ -156,7 +141,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var updateReq UpdateUserRequest
+	var updateReq service.UpdateUserRequest
 	if err := c.ShouldBindJSON(&updateReq); err != nil {
 		response.BadRequest(c, apperror.InvalidParams)
 		return
