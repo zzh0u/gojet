@@ -127,7 +127,7 @@ func CreateUser(c *gin.Context) {
 // @Id 			UpdateUser
 // @Tags 		auth
 // @Param 		id 		path 		int true "用户ID"
-// @Param 		user 	body 		UpdateUserRequest true "更新用户信息"
+// @Param 		user 	body 		service.UpdateUserRequest true "更新用户信息"
 // @Success		200		{object}	response.Response{data=service.UserResponse}	"更新成功"
 // @Failure 	400 	{object} 	response.Response "请求参数无效"
 // @Failure 	401 	{object} 	response.Response "认证失败"
@@ -147,12 +147,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	serviceReq := service.UpdateUserRequest{
-		Username: updateReq.Username,
-		NickName: updateReq.NickName,
-		Email:    updateReq.Email,
-	}
-	updatedUser, err := service.UpdateUser(idParam.ID, serviceReq)
+	updatedUser, err := service.UpdateUser(idParam.ID, updateReq)
 	if err != nil {
 		response.HandleError(c, err)
 		return

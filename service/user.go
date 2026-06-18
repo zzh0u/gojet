@@ -1,17 +1,43 @@
 package service
 
 import (
-	"gojet/dao"
 	"gojet/models"
 	"gojet/utils/apperror"
 	"log/slog"
 )
 
-// userRepo 包级变量，存储用户仓库实例
-var userRepo *dao.UserRepository
+// UserRepository 用户数据访问接口（依赖反转原则：Service 层定义接口）
+type UserRepository interface {
+	// Create 创建用户
+	Create(user *models.User) error
+
+	// CreateBatch 批量创建用户
+	CreateBatch(users []*models.User) error
+
+	// GetAll 获取所有用户
+	GetAll() ([]*models.User, error)
+
+	// GetByID 根据 ID 获取用户
+	GetByID(id int) (*models.User, error)
+
+	// GetUserByUserName 根据用户名获取用户
+	GetUserByUserName(username string) (*models.User, error)
+
+	// GetUserByEmail 根据邮箱获取用户
+	GetUserByEmail(email string) (*models.User, error)
+
+	// Update 更新用户
+	Update(user *models.User) error
+
+	// Delete 删除用户
+	Delete(id int) error
+}
+
+// userRepo 包级变量，存储用户仓库实例（依赖接口，而非具体实现）
+var userRepo UserRepository
 
 // InitService 初始化服务层，设置依赖的数据仓库
-func InitService(repo *dao.UserRepository) {
+func InitService(repo UserRepository) {
 	userRepo = repo
 }
 
