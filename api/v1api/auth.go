@@ -19,7 +19,7 @@ import (
 // @Failure 	401 	{object} 	response.Response "认证失败"
 // @Failure 	404 	{object} 	response.Response "用户不存在"
 // @Failure 	500 	{object} 	response.Response "服务器内部错误"
-// @Router /v1/login [post]
+// @Router /v1/auth/login [post]
 func Login(ctx *gin.Context) {
 	var req service.LoginReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
