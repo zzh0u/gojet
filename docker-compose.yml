@@ -5,7 +5,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: deploy/Dockerfile
     container_name: gojet
     ports:
       - "8080:8080"
@@ -26,7 +26,7 @@ services:
       - LOG_OUTPUT=both  # 同时输出到控制台和文件
       - LOG_FILE_PATH=/root/logs/app.log
     volumes:
-      - ./config:/root/config:ro
+      - ./configs:/root/configs:ro
       - ./logs/app:/root/logs  # 应用日志持久化挂载
     restart: unless-stopped
     depends_on:

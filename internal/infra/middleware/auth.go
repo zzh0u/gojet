@@ -3,9 +3,9 @@ package middleware
 import (
 	"strings"
 
-	"gojet/utils/apperror"
-	"gojet/utils/jwt"
-	"gojet/utils/response"
+	"gojet/internal/infra/apperror"
+	"gojet/internal/infra/httputil"
+	"gojet/internal/infra/jwt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,21 +26,21 @@ func JWT(secret string, skipPaths ...string) gin.HandlerFunc {
 
 		header := strings.TrimSpace(c.GetHeader("Authorization"))
 		if header == "" {
-			response.Error(c, 403, apperror.TokenMissing)
+			httputil.Error(c, 403, apperror.TokenMissing)
 			c.Abort()
 			return
 		}
 
 		tokenString, ok := strings.CutPrefix(header, "Bearer ")
 		if !ok || strings.TrimSpace(tokenString) == "" {
-			response.Error(c, 403, apperror.TokenInvalid)
+			httputil.Error(c, 403, apperror.TokenInvalid)
 			c.Abort()
 			return
 		}
 
 		claims, err := jwt.ParseAccessToken(strings.TrimSpace(tokenString), secret)
 		if err != nil {
-			response.Error(c, 403, apperror.TokenInvalid)
+			httputil.Error(c, 403, apperror.TokenInvalid)
 			c.Abort()
 			return
 		}

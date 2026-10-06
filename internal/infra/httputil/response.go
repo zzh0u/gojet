@@ -1,23 +1,23 @@
-package response
+package httputil
 
 import (
 	"errors"
 	"log/slog"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"gojet/internal/infra/apperror"
 
-	"gojet/utils/apperror"
+	"github.com/gin-gonic/gin"
 )
 
-// Response 统一响应结构体
+// Response 统一响应结构体。
 type Response struct {
 	Code    int    `json:"code"`    // 状态码
 	Message string `json:"message"` // 消息
 	Data    any    `json:"data"`    // 数据
 }
 
-// Success 返回成功响应
+// Success 返回成功响应。
 func Success(c *gin.Context, message string, data any) {
 	if message == "" {
 		message = "操作成功"
@@ -29,7 +29,7 @@ func Success(c *gin.Context, message string, data any) {
 	})
 }
 
-// Error 返回错误响应
+// Error 返回错误响应。
 func Error(c *gin.Context, code int, message string) {
 	httpCode := http.StatusBadRequest
 	switch code {
@@ -54,24 +54,23 @@ func Error(c *gin.Context, code int, message string) {
 	})
 }
 
-// BadRequest 返回400错误
+// BadRequest 返回 400 错误。
 func BadRequest(c *gin.Context, message string) {
 	Error(c, 400, message)
 }
 
-// NotFound 返回404错误
+// NotFound 返回 404 错误。
 func NotFound(c *gin.Context, message string) {
 	Error(c, 404, message)
 }
 
-// InternalServerError 返回500错误
+// InternalServerError 返回 500 错误。
 func InternalServerError(c *gin.Context, message string) {
 	Error(c, 500, message)
 }
 
 // HandleError 统一处理 service 层返回的错误。
-// - 如果是 *errpkg.Error，则按照其中的 Code/Message 返回对应响应。
-// - 否则返回通用 500（服务器内部错误）。
+// 如果是 *apperror.Error，则按照其中的 Code/Message 返回对应响应；否则返回通用 500。
 func HandleError(c *gin.Context, err error) {
 	if err == nil {
 		return

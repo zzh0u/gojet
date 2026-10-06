@@ -1,4 +1,4 @@
-package dao
+package user
 
 import (
 	"context"
@@ -7,45 +7,38 @@ import (
 	"fmt"
 	"time"
 
-	"gojet/models"
-	"gojet/utils/apperror"
+	"gojet/internal/infra/apperror"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
-// UserCacheConfig 用户缓存配置
+// UserCacheConfig 用户缓存配置。
 var (
-	// UserCacheDuration 缓存过期时间
+	// UserCacheDuration 缓存过期时间。
 	UserCacheDuration = 10 * time.Minute
 
-	// UserCachePrefix 缓存键前缀
+	// UserCachePrefix 缓存键前缀。
 	UserCachePrefix = "user:"
 )
 
-// UserRepository 用户仓库
+// UserRepository 用户仓库。
 type UserRepository struct {
 	db    *gorm.DB
-	cache *redis.Client // Redis 客户端，用于缓存
+	cache *redis.Client
 }
 
-// NewUserRepository 创建用户仓库实例
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db, cache: nil}
+// NewUserRepository 创建用户仓库实例。cache 可为 nil，表示不启用缓存。
+func NewUserRepository(db *gorm.DB, cache *redis.Client) *UserRepository {
+	return &UserRepository{db: db, cache: cache}
 }
 
-// SetCache 设置缓存客户端（用于运行时启用缓存）
-func (r *UserRepository) SetCache(cache *redis.Client) {
-	r.cache = cache
-}
-
-// userCacheKey 生成用户缓存键
 func userCacheKey(id int) string {
 	return fmt.Sprintf("%s%d", UserCachePrefix, id)
 }
 
-// Create 创建用户
-func (r *UserRepository) Create(user *models.User) error {
+// Create 创建用户。
+func (r *UserRepository) Create(user *User) error {
 	result := r.db.Create(user)
 	if result.Error != nil {
 		return apperror.Wrap(result.Error, 500, apperror.DBInsertError)
@@ -53,8 +46,8 @@ func (r *UserRepository) Create(user *models.User) error {
 	return nil
 }
 
-// CreateBatch 批量创建用户
-func (r *UserRepository) CreateBatch(users []*models.User) error {
+// CreateBatch 批量创建用户。
+func (r *UserRepository) CreateBatch(users []*User) error {
 	result := r.db.CreateInBatches(users, len(users))
 	if result.Error != nil {
 		return apperror.Wrap(result.Error, 500, apperror.DBInsertError)
@@ -62,10 +55,9 @@ func (r *UserRepository) CreateBatch(users []*models.User) error {
 	return nil
 }
 
-// GetAll 获取所有用户
-func (r *UserRepository) GetAll() ([]*models.User, error) {
-	var users []*models.User
-	// GORM 默认不会查询软删除的记录
+// GetAll 获取所有用户。
+func (r *UserRepository) GetAll() ([]*User, error) {
+	var users []*User
 	result := r.db.Find(&users)
 	if result.Error != nil {
 		return nil, apperror.Wrap(result.Error, 500, apperror.DBQueryError)
@@ -73,30 +65,26 @@ func (r *UserRepository) GetAll() ([]*models.User, error) {
 	return users, nil
 }
 
-// GetByID 根据 ID 获取用户 - 支持缓存
-func (r *UserRepository) GetByID(id int) (*models.User, error) {
+// GetByID 根据 ID 获取用户，优先读取缓存。
+func (r *UserRepository) GetByID(id int) (*User, error) {
 	ctx := context.Background()
 
-	// 如果有缓存，先从缓存获取
 	if r.cache != nil {
 		key := userCacheKey(id)
 		cached, err := r.cache.Get(ctx, key).Result()
 		if err == nil {
-			// 缓存命中
-			var user models.User
+			var user User
 			if err := json.Unmarshal([]byte(cached), &user); err == nil {
 				return &user, nil
 			}
 		}
 	}
 
-	// 缓存未命中，从数据库获取
-	user, err := r.getByIDFromDB(ctx, id)
+	user, err := r.getByIDFromDB(id)
 	if err != nil {
 		return nil, err
 	}
 
-	// 写入缓存
 	if r.cache != nil && user != nil {
 		data, _ := json.Marshal(user)
 		r.cache.Set(ctx, userCacheKey(id), data, UserCacheDuration)
@@ -105,9 +93,8 @@ func (r *UserRepository) GetByID(id int) (*models.User, error) {
 	return user, nil
 }
 
-// getByIDFromDB 从数据库获取用户
-func (r *UserRepository) getByIDFromDB(ctx context.Context, id int) (*models.User, error) {
-	var user models.User
+func (r *UserRepository) getByIDFromDB(id int) (*User, error) {
+	var user User
 	result := r.db.First(&user, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, apperror.New(404, apperror.RecordNotFound)
@@ -118,24 +105,22 @@ func (r *UserRepository) getByIDFromDB(ctx context.Context, id int) (*models.Use
 	return &user, nil
 }
 
-// GetUserByUserName 根据用户名获取用户 - 支持缓存
-func (r *UserRepository) GetUserByUserName(username string) (*models.User, error) {
+// GetUserByUserName 根据用户名获取用户，优先读取缓存。
+func (r *UserRepository) GetUserByUserName(username string) (*User, error) {
 	ctx := context.Background()
 
-	// 如果有缓存，通过用户名缓存键查询
 	if r.cache != nil {
 		key := fmt.Sprintf("%s%s", UserCachePrefix, "username:"+username)
 		cached, err := r.cache.Get(ctx, key).Result()
 		if err == nil {
-			var user models.User
+			var user User
 			if err := json.Unmarshal([]byte(cached), &user); err == nil {
 				return &user, nil
 			}
 		}
 	}
 
-	// 缓存未命中，从数据库获取
-	var user models.User
+	var user User
 	result := r.db.Where("username = ?", username).First(&user)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, apperror.New(404, apperror.RecordNotFound)
@@ -144,12 +129,9 @@ func (r *UserRepository) GetUserByUserName(username string) (*models.User, error
 		return nil, apperror.Wrap(result.Error, 500, apperror.DBQueryError)
 	}
 
-	// 写入缓存
 	if r.cache != nil {
-		// 按 ID 缓存
 		data, _ := json.Marshal(&user)
 		r.cache.Set(ctx, userCacheKey(user.ID), data, UserCacheDuration)
-		// 按用户名缓存
 		key := fmt.Sprintf("%s%s", UserCachePrefix, "username:"+username)
 		r.cache.Set(ctx, key, data, UserCacheDuration)
 	}
@@ -157,14 +139,13 @@ func (r *UserRepository) GetUserByUserName(username string) (*models.User, error
 	return &user, nil
 }
 
-// Update 更新用户 - 保存用户信息到数据库
-func (r *UserRepository) Update(user *models.User) error {
+// Update 更新用户，并清除对应缓存。
+func (r *UserRepository) Update(user *User) error {
 	result := r.db.Save(user)
 	if result.Error != nil {
 		return apperror.Wrap(result.Error, 500, apperror.DBUpdateError)
 	}
 
-	// 清除用户缓存
 	if r.cache != nil {
 		r.invalidateCache(user.ID, user.Username)
 	}
@@ -172,28 +153,25 @@ func (r *UserRepository) Update(user *models.User) error {
 	return nil
 }
 
-// Delete 删除用户 - 软删除指定 ID 的用户
+// Delete 软删除指定 ID 的用户，并清除对应缓存。
 func (r *UserRepository) Delete(id int) error {
-	// 先获取用户信息，用于清除用户名缓存
-	var user models.User
+	var user User
 	if err := r.db.First(&user, id).Error; err == nil {
-		result := r.db.Delete(&models.User{}, id)
+		result := r.db.Delete(&User{}, id)
 		if result.Error != nil {
 			return apperror.Wrap(result.Error, 500, apperror.DBDeleteError)
 		}
-		// 清除缓存
 		if r.cache != nil {
 			r.invalidateCache(user.ID, user.Username)
 		}
 		return nil
 	}
 
-	result := r.db.Delete(&models.User{}, id)
+	result := r.db.Delete(&User{}, id)
 	if result.Error != nil {
 		return apperror.Wrap(result.Error, 500, apperror.DBDeleteError)
 	}
 
-	// 清除缓存
 	if r.cache != nil {
 		r.invalidateCache(id, "")
 	}
@@ -201,24 +179,22 @@ func (r *UserRepository) Delete(id int) error {
 	return nil
 }
 
-// GetUserByEmail 根据邮箱获取用户
-func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
+// GetUserByEmail 根据邮箱获取用户，优先读取缓存。
+func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
 	ctx := context.Background()
 
-	// 如果有缓存，通过邮箱缓存键查询
 	if r.cache != nil {
 		key := fmt.Sprintf("%s%s", UserCachePrefix, "email:"+email)
 		cached, err := r.cache.Get(ctx, key).Result()
 		if err == nil {
-			var user models.User
+			var user User
 			if err = json.Unmarshal([]byte(cached), &user); err == nil {
 				return &user, nil
 			}
 		}
 	}
 
-	// 缓存未命中，从数据库获取
-	var user models.User
+	var user User
 	result := r.db.Where("email = ?", email).First(&user)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, apperror.New(404, apperror.RecordNotFound)
@@ -227,7 +203,6 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 		return nil, apperror.Wrap(result.Error, 500, apperror.DBQueryError)
 	}
 
-	// 写入缓存
 	if r.cache != nil {
 		data, _ := json.Marshal(&user)
 		r.cache.Set(ctx, userCacheKey(user.ID), data, UserCacheDuration)
@@ -238,7 +213,6 @@ func (r *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-// invalidateCache 清除用户缓存
 func (r *UserRepository) invalidateCache(id int, username string) {
 	ctx := context.Background()
 	keys := []string{userCacheKey(id)}

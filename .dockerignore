@@ -1,6 +1,6 @@
 .git
 .gitignore
-Dockerfile
+/Dockerfile
 docker-compose.yml
 bin
 vendor

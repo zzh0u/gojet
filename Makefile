@@ -14,7 +14,7 @@ DOCKER_COMPOSE := docker-compose
 build:
 	@echo "编译 Linux 可执行文件..."
 	@mkdir -p bin
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags '-extldflags "-static" -s -w' -o bin/$(BINARY_NAME)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags '-extldflags "-static" -s -w' -o bin/$(BINARY_NAME) ./cmd/api
 
 # 代码质量工具
 lint:
@@ -34,7 +34,7 @@ install-goimports:
 # Swagger 文档工具
 swag:
 	@which $(SWAG) > /dev/null || (echo "swag 未安装，运行 'make install-swag'" && exit 1)
-	$(SWAG) init
+	$(SWAG) init -g cmd/api/main.go --parseDependency --parseInternal
 
 install-swag:
 	$(GO) install github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION)
