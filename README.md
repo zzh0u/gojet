@@ -8,12 +8,12 @@
 gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，解决以下问题：
 
 - **基础架构代码** - 新建 Go Web 项目需要重新配置数据库连接、日志系统、路由、中间件等基础设施
-- **标准化项目结构** - 清晰地组织 Go 项目的分层架构（API/Service/DAO/Models）
+- **标准化项目结构** - 命令放在 `cmd`，不对外的包放在 `internal`
 - **环境配置** - 自动处理配置文件、环境变量、Docker 部署等运维相关设置
 - **认证系统实现** - JWT 认证、Token 刷新、权限控制等安全功能实现
 
 适合以下场景：
-- 学习 Go Web 开发的最佳实践和分层架构设计
+- 学习 Go Web 开发的目录约定和模块化组织
 - 快速启动新项目，无需从零配置基础设施
 - 作为团队项目模板，统一代码结构和开发规范
 
@@ -21,7 +21,7 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，解决以下问�
 
 本项目提供开箱即用的基础架构，包含：
 
-- **完整的分层架构** - API、Service、DAO、Models 层分离
+- **按领域分包** - 用户、登录各自一个包，由 `cmd/api` 组装后启动
 - **RESTFul API** - 符合 REST 规范的接口设计
 - **数据库支持** - GORM + PostgreSQL，自动迁移
 - **配置管理** - YAML + 环境变量双重配置
@@ -36,27 +36,28 @@ gojet 是一个基于 Gin 框架的 Go Web 开发模板项目，解决以下问�
 
 ## 项目结构
 
+这是一个应用模块，不是给外部 import 的库。目录按 [Organizing a Go module](https://go.dev/doc/modules/layout) 组织：命令放在 `cmd/api`，其余包放在 `internal`，这样别的模块不能引用它们。
+
+启动链路：`cmd/api/main.go` 加载配置，`cmd/api/app.go` 连接数据库和 Redis、挂上路由并启动。
+
 ```text
-├── api/
-│   └── v1api/            # HTTP API 处理层
-├── service/              # 业务逻辑服务层
-├── dao/                  # 数据访问对象层
-├── models/               # 数据模型定义
-├── config/               # 配置文件
-├── router/               # 路由配置
-├── middleware/           # Gin 中间件（鉴权、日志、上下文注入）
-├── utils/                # 通用工具类
-│   ├── apperror/         # 业务错误定义
-│   ├── jwt/              # JWT 工具（令牌生成、解析）
-│   └── response/         # 统一响应处理
-├── main.go               # 应用入口
-├── service.go            # 服务启动和依赖注入逻辑
-├── go.mod                # Go 模块定义
-├── go.sum                # 依赖版本锁定
-├── Dockerfile            # Docker 镜像构建
-├── docker-compose.yml    # Docker 服务编排
-├── Makefile              # 构建自动化脚本
-└── .gitignore            # Git 忽略规则
+cmd/api/                # 唯一的 main：加载配置、组装依赖、启动 HTTP
+configs/                # YAML 配置；由环境变量覆盖
+deploy/Dockerfile       # 镜像构建
+internal/               # 本模块私有包
+  config/               # 配置加载
+  user/                 # 用户模型、存储、业务和 HTTP
+  auth/                 # 登录
+  health/               # 健康检查
+  infra/                # 支撑组件，目录本身不是包
+    middleware/         # JWT、请求日志
+    postgres/           # PostgreSQL 客户端
+    redis/              # Redis 客户端
+    logger/             # JSON 日志
+    jwt/                # JWT 签发与解析
+    httputil/           # 统一 HTTP 响应
+    apperror/           # 业务错误
+tests/                  # 本地联调 shell 脚本；不参与编译
 ```
 
 ## 开发指南
@@ -97,14 +98,12 @@ make clean              # 清理 Docker Compose 容器和数据卷
 
 ### 添加新功能
 
-参考以下步骤添加新模块：
+1. 在 `internal/<name>/` 增加一个包，模型和 HTTP 处理放在同一个包里
+2. 在 `cmd/api/app.go` 里构造它，并调用 `RegisterRoutes`
+3. 如有新表，在 `newApp` 里对该模型执行 `AutoMigrate`
+4. HTTP 响应使用 `internal/infra/httputil`，业务错误使用 `internal/infra/apperror`
 
-1. **定义 Model** - 在 `models/` 目录创建数据模型
-2. **创建 DAO** - 在 `dao/` 目录实现数据库操作
-3. **实现 Service** - 在 `service/` 目录编写业务逻辑
-4. **添加 API** - 在 `api/v1api/` 目录创建 HTTP 处理函数
-5. **配置路由** - 在 `router/router.go` 中添加路由
-6. **初始化组件** - 服务启动时自动通过 GORM 迁移创建表结构，service 层通过全局函数注册
+本地接口检查见 [tests/README.md](tests/README.md)。
 
 ## 许可证
 

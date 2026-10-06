@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-GoJet 是一个基于 Gin 框架的 Go Web 应用模板，采用清晰的分层架构（API/Service/DAO/Models）并集成 PostgreSQL 数据库。代码库使用中文进行注释和 API 响应。
+GoJet 是一个基于 Gin 框架的 Go Web 应用模板，按 Go 模块的常见组织方式放置代码：命令在 `cmd/api`，不对外暴露的包在 `internal`。代码库使用中文进行注释和 API 响应。
 
 ## 开发命令
 
@@ -15,19 +15,19 @@ GoJet 是一个基于 Gin 框架的 Go Web 应用模板，采用清晰的分层�
 make build
 
 # 本地运行（需要 PostgreSQL，不使用 Docker）
-go run main.go
+go run ./cmd/api
 
 # 使用开发配置运行
-APP_MODE=debug LOG_LEVEL=debug LOG_OUTPUT=stdout go run main.go
+APP_MODE=debug LOG_LEVEL=debug LOG_OUTPUT=stdout go run ./cmd/api
 
 # 使用生产配置运行
-APP_MODE=release LOG_LEVEL=info LOG_OUTPUT=both go run main.go
+APP_MODE=release LOG_LEVEL=info LOG_OUTPUT=both go run ./cmd/api
 ```
 
 ### Docker 命令
 
 ```bash
-# 生产环境（使用 docker-compose.yml）
+# 生产环境（使用仓库根目录的 docker-compose.yml，镜像定义在 deploy/Dockerfile）
 make up-build      # 构建并启动服务
 make up            # 启动服务
 make down          # 停止服务
@@ -54,14 +54,11 @@ make swag
 
 ### 测试
 
-目前项目中不存在测试文件。添加测试时，请遵循 Go 约定创建 `*_test.go` 文件。
+目前项目中没有 `*_test.go`。`tests/` 只放本地联调命令，不参与编译。添加测试时，请遵循 Go 约定创建 `*_test.go` 文件。
 
 ```bash
 # 运行所有测试
 go test ./...
-
-# 运行特定包的测试
-go test ./api/v1api
 
 # 运行测试并显示详细输出
 go test -v ./...
@@ -73,89 +70,51 @@ go tool cover -html=coverage.out
 
 ## 架构
 
-### 分层结构
+### 目录
 
-- **models/** - 数据模型定义，包含 GORM 标签和验证标签
-- **dao/** - 数据库操作，继承 `dao.BaseRepository` 模式
-- **service/** - 业务逻辑实现，通过全局函数注册
-- **api/v1api/** - HTTP 处理器，包含参数验证和统一响应格式化
-- **router/** - 路由定义
-- **config/** - YAML 配置文件，支持环境变量覆盖
-- **middleware/** - Gin 中间件，如 JWT 鉴权、请求日志、上下文注入
-- **utils/** - 响应处理、错误工具和 JWT 辅助函数
+```text
+cmd/api/main.go          # 加载配置并启动
+cmd/api/app.go           # 组装数据库、缓存、路由
+configs/config.yaml
+deploy/Dockerfile
+internal/config/
+internal/user/           # 用户：模型、仓储、业务、HTTP
+internal/auth/           # 登录
+internal/health/
+internal/infra/          # 支撑组件，目录本身不是包
+  middleware/            # JWT、请求日志
+  postgres/
+  redis/
+  logger/
+  jwt/
+  httputil/
+  apperror/
+tests/
+```
 
-### 关键文件
+`internal` 是 Go 工具链强制的：其他模块不能 import 其中的包。这个仓库是应用，没有需要对外发布的库，所以没有 `pkg`。组装写在 `cmd/api` 的 `main` 包里。
 
-- `main.go` - 应用入口点，调用 `server()` 函数
-- `service.go` - **依赖注入容器**，初始化所有服务组件
-- `router/router.go` - 路由设置和中间件配置
-- `config/config.yaml` - 默认配置文件
-- `config/config.go` - 配置结构定义和加载逻辑
-- `utils/response/response.go` - 统一响应处理
-- `utils/apperror/error.go` - 业务错误定义
-- `utils/jwt/jwt.go` - JWT 工具
-- `middleware/auth.go` - JWT 鉴权中间件
+同一领域的类型和处理放在一个包中。用户相关代码都在 `internal/user`，登录相关代码都在 `internal/auth`。
 
-### Service 启动流程
+### 启动流程
 
-**`service.go` 中的 `newService()` 函数执行顺序**：
-1. **加载配置** - 从 `config/config.yaml` 加载，环境变量覆盖
-2. **初始化日志** - 根据配置创建 JSON 格式日志处理器
-3. **设置 Gin 模式** - `debug` 或 `release` 模式
-4. **连接数据库** - PostgreSQL 连接，自动迁移表结构
-5. **初始化 DAO 层** - 创建数据访问对象
-6. **注册 Service 层** - 通过 `service.InitService()` 和 `service.InitAuth()` 注册
-7. **创建初始数据** - 调用 `service.CreateInitialData()`
-8. **配置 Gin 路由** - 添加中间件，设置 JWT 白名单
-9. **创建 HTTP 服务器** - 绑定端口，启动服务
+`cmd/api/app.go` 的 `newApp`：
 
-**依赖注入模式**：
-- `Service` 结构体包含所有核心组件：Config, DB, Logger, HTTPServer
-- 通过 `newService()` 工厂函数创建和初始化所有依赖
-- 数据库连接和配置通过 Gin 上下文传递：`c.Set("db", sqlDB)`, `c.Set("config", cfg)`
-- Service 层通过全局函数注册：`service.InitService(userRepo)`
+1. `main` 从 `configs/config.yaml` 加载配置，环境变量覆盖
+2. 初始化 JSON 日志
+3. 设置 Gin 模式
+4. 连接 PostgreSQL，并迁移 `user` 表
+5. 连接 Redis；失败时继续启动，用户缓存关闭
+6. 构造用户仓储和服务，并写入初始示例数据
+7. 注册 Recovery、请求日志和 JWT 中间件
+8. 调用 health、user、auth 的 `RegisterRoutes`，然后启动 HTTP 服务
 
 ### 添加新功能
 
-1. **定义数据模型** - 在 `models/` 目录创建 Go 结构体，包含 GORM 标签和验证标签
-2. **创建数据访问层** - 在 `dao/` 目录实现数据库操作，继承 `dao.BaseRepository` 模式
-3. **实现业务逻辑** - 在 `service/` 目录编写业务逻辑，通过 `service.InitService()` 注册
-4. **添加 API 端点** - 在 `api/v1api/` 目录创建 HTTP 处理器，使用 `utils/response/` 返回统一格式
-5. **配置路由** - 在 `router/router.go` 中添加路由定义，支持 JWT 中间件和白名单
-6. **初始化组件** - 在 `service.go` 的 `newService()` 函数中初始化新组件
-
-**完整示例流程**：
-```go
-// 1. models/user_profile.go
-type UserProfile struct {
-    UserID uint   `gorm:"primaryKey"`
-    Bio    string `gorm:"type:text"`
-}
-
-// 2. dao/user_profile_repository.go
-type UserProfileRepository struct {
-    *BaseRepository[models.UserProfile]
-}
-
-// 3. service/user_profile_service.go
-func CreateUserProfile(userID uint, bio string) error {
-    // 业务逻辑
-}
-
-// 4. api/v1api/user_profile.go
-func UpdateProfile(c *gin.Context) {
-    // 参数验证
-    // 调用 service.CreateUserProfile()
-    // 返回 util.response.Success() 或 .Error()
-}
-
-// 5. router/router.go
-users.PUT("/:id/profile", v1api.UpdateProfile)
-
-// 6. service.go 的 newService() 函数
-// 自动通过 AutoMigrate 创建表
-// 通过 service.InitService() 注册服务
-```
+1. 在 `internal/<name>/` 建一个包，把模型和 HTTP 处理放在一起
+2. 在 `cmd/api/app.go` 里构造并调用 `RegisterRoutes`
+3. 新表在 `newApp` 里 `AutoMigrate`
+4. 响应走 `internal/infra/httputil`，业务错误走 `internal/infra/apperror`
 
 ### 数据库
 
@@ -167,22 +126,24 @@ users.PUT("/:id/profile", v1api.UpdateProfile)
 
 - **RESTful 端点** - 所有 API 位于 `/v1/` 路径下
 - **请求/响应格式** - JSON 格式，统一响应结构：`{"code": 200, "message": "成功", "data": {...}}`
-- **错误消息** - 中文错误消息，通过 `utils/apperror/` 定义业务错误码
+- **错误消息** - 中文错误消息，通过 `internal/infra/apperror/` 定义
 - **健康检查** - `/v1/health` 端点返回应用状态和数据库连接状态
 - **认证中间件** - JWT Access Token 验证，白名单路由可跳过验证（认证相关路由位于 `/v1/auth/` 路径下）
 - **请求日志** - 自动记录所有 HTTP 请求的详细信息
 
 **错误处理流程**：
-1. DAO 层返回原始错误或 `gorm.ErrRecordNotFound`
-2. Service 层包装业务错误：`apperror.New("用户不存在", 1001)`
-3. API 层通过 `response.Error(c, err)` 返回统一格式
-4. 中间件捕获 panic 并返回 500 错误
+
+1. repository 返回 `*apperror.Error`（记录不存在时为 404）
+2. service 继续包装业务错误：`apperror.New(code, message)` 或 `apperror.Wrap`
+3. handler 通过 `httputil.HandleError` 返回统一格式
+4. Recovery 中间件捕获 panic 并返回 500 错误
 
 **JWT 认证系统**：
+
 - 双层 Token 架构 - Access Token（短期） + Refresh Token（长期）
-- 密钥配置在 `config.yaml` 的 `jwt.secret`
+- 密钥配置在 `configs/config.yaml` 的 `jwt.secret`
 - Access Token 过期时间可配置（默认 24 小时），Refresh Token 过期时间可配置（默认 7 天）
-- 白名单路由：`/v1/auth/login`, `/v1/health`
+- 白名单路由：路径最后一段为 `login` 或 `health`（即 `/v1/auth/login`、`/v1/health`）
 - 用户创建只通过受保护接口 `POST /v1/user` 完成，需要令牌
 - Token 存储在请求头：`Authorization: Bearer <access_token>`
 - 用户信息通过 `c.Get("userid")` 和 `c.Get("username")` 在上下文中获取
@@ -190,7 +151,7 @@ users.PUT("/:id/profile", v1api.UpdateProfile)
 
 ## 日志系统
 
-项目使用 Go 标准库 `log/slog` 的结构化 JSON 日志。
+项目使用 Go 标准库 `log/slog` 的结构化 JSON 日志，封装在 `internal/infra/logger`。
 
 ### 日志配置选项
 
@@ -201,11 +162,13 @@ users.PUT("/:id/profile", v1api.UpdateProfile)
 ### 不同环境的日志行为
 
 **开发模式** (`APP_MODE=debug`, config.yaml 中的默认值)：
+
 - Debug 级别日志
 - 仅输出到 stdout（便于实时查看）
 - Gin debug 模式启用（显示路由信息）
 
 **生产模式** (`APP_MODE=release`, Docker 中使用)：
+
 - Info 级别日志（减少日志量）
 - 输出到控制台和文件（./logs/app.log）
 - Gin release 模式（性能优化，无调试信息）
@@ -230,6 +193,7 @@ users.PUT("/:id/profile", v1api.UpdateProfile)
 ## 开发工作流
 
 ### 本地开发
+
 ```bash
 # 1. 安装依赖
 go mod download
@@ -244,48 +208,32 @@ docker run -d --name gojet-postgres \
   postgres:15
 
 # 3. 运行应用
-go run main.go
+go run ./cmd/api
 
 # 或使用开发配置
-APP_MODE=debug LOG_LEVEL=debug LOG_OUTPUT=stdout go run main.go
+APP_MODE=debug LOG_LEVEL=debug LOG_OUTPUT=stdout go run ./cmd/api
 ```
 
 ### 代码质量检查
+
 ```bash
-# 安装并运行代码检查工具
 make install-lint
 make lint
-
-# 格式化代码
 make install-goimports
 make goimports
-
-# 提交前检查
-git add .
-make lint
 go test ./...
 ```
 
-### 添加新功能的标准流程
-1. **定义数据模型** (`models/`) - 包含 GORM 标签和验证标签
-2. **创建数据访问层** (`dao/`) - 继承 `dao.BaseRepository` 模式
-3. **实现业务逻辑** (`service/`) - 通过 `service.InitService()` 注册
-4. **添加 API 端点** (`api/v1api/`) - 使用 `utils/response/` 返回统一格式
-5. **配置路由** (`router/router.go`) - 支持 JWT 中间件和白名单
-6. **运行自动迁移** - 重启应用时自动创建表结构
-
 ## Docker 环境配置
 
-项目为开发和生产环境提供独立的 Docker Compose 配置。
+镜像定义在 `deploy/Dockerfile`，编排文件是仓库根目录的 `docker-compose.yml`。
 
 ### 生产环境
-
-**文件**：`docker-compose.yml`
 
 - **应用模式**：`release`
 - **日志级别**：`info`
 - **日志输出**：`both`（控制台 + 文件）
-- **特性**：性能优化，日志持久化到 `./logs/app.log`
+- **配置挂载**：`./configs` → `/root/configs`
 - **使用**：`make up-build`
 
 ### 环境文件
@@ -294,33 +242,20 @@ go test ./...
 - **`.env.prod`**：生产环境变量文件（创建用于生产环境覆盖）
 - 这些文件不通过 git 跟踪（添加到 `.gitignore`）
 
-## 关键架构决策
-
-### 依赖注入模式
-- **当前实现**：通过 `service.go` 中的 `Service` 结构体管理所有依赖
-- **依赖传递**：数据库连接和配置通过 Gin 上下文传递：`c.Set("db", sqlDB)`, `c.Set("config", cfg)`
-- **Service 注册**：通过全局函数 `service.InitService()` 和 `service.InitAuth()` 注册
-
-### 错误处理策略
-1. **DAO 层**：返回原始错误或 `gorm.ErrRecordNotFound`
-2. **Service 层**：包装业务错误：`apperror.New("用户不存在", 1001)`
-3. **API 层**：通过 `response.Error(c, err)` 返回统一格式
-4. **中间件**：捕获 panic 并返回 500 错误
-
 ## 重要说明
 
-1. **日志系统** - 使用 Go 标准库 `log/slog` 的结构化 JSON 日志。支持多输出（stdout/file/both），自动记录 HTTP 请求详情。已移除重复的 gin.Logger() 日志。
+1. **日志系统** - 使用 `internal/infra/logger` 封装的 `log/slog` JSON 日志。支持 stdout/file/both，并由 `internal/infra/middleware` 记录 HTTP 请求。
 
-2. **架构状态** - 项目采用清晰的分层架构（API/Service/DAO/Models）。Service 层通过全局函数注册，依赖注入通过 `service.go` 中的 `Service` 结构体管理。
+2. **目录约定** - 入口在 `cmd/api`。不对外的包都在 `internal`。新增领域时加一个 `internal` 包，并在 `cmd/api/app.go` 里挂上路由。
 
 3. **代码规范** - 代码库使用中文注释和 API 错误消息。添加新代码时保持这一约定。
 
-4. **JWT 认证** - **已实现**。JWT 认证系统完整集成，采用双层 Token 架构（Access Token + Refresh Token），包含 token 生成、验证、白名单路由和用户上下文传递。登录接口返回双层 Token，支持长期保持登录状态。
+4. **JWT 认证** - 已实现。双层 Token（Access Token + Refresh Token），登录接口返回两份令牌。
 
-5. **错误处理** - 使用 `utils/apperror/` 中的自定义错误处理系统，包含业务错误码和中文错误消息。通过 `utils/response/` 返回统一格式。
+5. **错误处理** - 使用 `internal/infra/apperror` 与 `internal/infra/httputil`。
 
-6. **测试覆盖** - 目前项目中没有测试文件。添加测试时遵循 Go 测试约定，创建 `*_test.go` 文件。
+6. **测试覆盖** - 目前没有 `*_test.go`。`tests/` 是本地联调 shell 脚本，说明见 `tests/README.md`。
 
-7. **配置管理** - 支持 YAML 配置文件 + 环境变量覆盖。生产环境建议使用环境变量设置敏感信息（数据库密码、JWT 密钥等）。
+7. **配置管理** - 默认读取 `configs/config.yaml`，环境变量可覆盖。生产环境用环境变量设置数据库密码和 JWT 密钥。
 
-8. **Docker 部署** - 提供完整的 Docker Compose 配置，支持开发和生产环境。日志通过卷挂载持久化。
+8. **Docker 部署** - `deploy/Dockerfile` 构建 `./cmd/api`，并把 `configs/` 打进镜像。日志通过卷挂载持久化。
