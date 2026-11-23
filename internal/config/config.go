@@ -3,163 +3,113 @@ package config
 import (
 	"fmt"
 	"os"
-	"strconv"
 
-	"github.com/goccy/go-yaml"
+	"github.com/spf13/viper"
 )
 
 // Config 应用配置结构体 - 包含所有配置项
 type Config struct {
-	App      AppConfig      `yaml:"app"`      // 应用配置
-	Database DatabaseConfig `yaml:"database"` // 数据库配置
-	Logging  LoggingConfig  `yaml:"logging"`  // 日志配置
-	JWT      JWTConfig      `yaml:"jwt"`      // JWT 配置
-	Redis    RedisConfig    `yaml:"redis"`    // Redis 配置
+	App      AppConfig      `mapstructure:"app"`      // 应用配置
+	Database DatabaseConfig `mapstructure:"database"` // 数据库配置
+	Logging  LoggingConfig  `mapstructure:"logging"`  // 日志配置
+	JWT      JWTConfig      `mapstructure:"jwt"`      // JWT 配置
+	Redis    RedisConfig    `mapstructure:"redis"`    // Redis 配置
 }
 
 // AppConfig 应用配置 - 定义应用的基本信息
 type AppConfig struct {
-	Name    string `yaml:"name"`    // 应用名称
-	Version string `yaml:"version"` // 应用版本
-	Port    int    `yaml:"port"`    // 服务端口
-	Mode    string `yaml:"mode"`    // 运行模式 (debug/release/test)
+	Name    string `mapstructure:"name"`    // 应用名称
+	Version string `mapstructure:"version"` // 应用版本
+	Port    int    `mapstructure:"port"`    // 服务端口
+	Mode    string `mapstructure:"mode"`    // 运行模式 (debug/release/test)
 }
 
 // DatabaseConfig 数据库配置 - PostgreSQL 连接参数
 type DatabaseConfig struct {
-	Host     string `yaml:"host"`     // 数据库主机地址
-	Port     int    `yaml:"port"`     // 数据库端口
-	User     string `yaml:"user"`     // 数据库用户名
-	Password string `yaml:"password"` // 数据库密码
-	DBName   string `yaml:"dbname"`   // 数据库名称
-	SSLMode  string `yaml:"sslmode"`  // SSL 连接模式
+	Host     string `mapstructure:"host"`     // 数据库主机地址
+	Port     int    `mapstructure:"port"`     // 数据库端口
+	User     string `mapstructure:"user"`     // 数据库用户名
+	Password string `mapstructure:"password"` // 数据库密码
+	DBName   string `mapstructure:"dbname"`   // 数据库名称
+	SSLMode  string `mapstructure:"sslmode"`  // SSL 连接模式
 }
 
 // LoggingConfig 日志配置 - 定义日志行为
 type LoggingConfig struct {
-	Level    string `yaml:"level"`     // 日志级别 (debug/info/warn/error)
-	Output   string `yaml:"output"`    // 日志输出位置 (stdout/file/both)
-	FilePath string `yaml:"file_path"` // 日志文件路径
+	Level    string `mapstructure:"level"`     // 日志级别 (debug/info/warn/error)
+	Output   string `mapstructure:"output"`    // 日志输出位置 (stdout/file/both)
+	FilePath string `mapstructure:"file_path"` // 日志文件路径
 }
 
 // JWTConfig JWT 配置 - 定义 JWT token 相关参数
 type JWTConfig struct {
-	Secret            string `yaml:"secret"`              // JWT 签名密钥
-	AccessExpireHours int    `yaml:"access_expire_hours"` // Access Token 过期时间（小时）
-	RefreshExpireDays int    `yaml:"refresh_expire_days"` // Refresh Token 过期时间（天）
+	Secret            string `mapstructure:"secret"`              // JWT 签名密钥
+	AccessExpireHours int    `mapstructure:"access_expire_hours"` // Access Token 过期时间（小时）
+	RefreshExpireDays int    `mapstructure:"refresh_expire_days"` // Refresh Token 过期时间（天）
 }
 
 // RedisConfig Redis 配置 - 定义 Redis 连接参数
 type RedisConfig struct {
-	Host     string `yaml:"host"`     // Redis 主机地址
-	Port     int    `yaml:"port"`     // Redis 端口
-	Password string `yaml:"password"` // Redis 密码（无密码留空）
-	DB       int    `yaml:"db"`       // Redis 数据库编号
+	Host     string `mapstructure:"host"`     // Redis 主机地址
+	Port     int    `mapstructure:"port"`     // Redis 端口
+	Password string `mapstructure:"password"` // Redis 密码（无密码留空）
+	DB       int    `mapstructure:"db"`       // Redis 数据库编号
 }
 
-// LoadConfig 加载配置 - 从 YAML 文件和环境变量读取配置
-func LoadConfig(configPath string) (*Config, error) {
-	config := &Config{}
+// envBindings 配置键与现有环境变量名的对应关系。
+var envBindings = []struct {
+	key string
+	env string
+}{
+	{"app.name", "APP_NAME"},
+	{"app.port", "APP_PORT"},
+	{"app.mode", "APP_MODE"},
+	{"database.host", "DB_HOST"},
+	{"database.port", "DB_PORT"},
+	{"database.user", "DB_USER"},
+	{"database.password", "DB_PASSWORD"},
+	{"database.dbname", "DB_NAME"},
+	{"database.sslmode", "DB_SSLMODE"},
+	{"logging.level", "LOG_LEVEL"},
+	{"logging.output", "LOG_OUTPUT"},
+	{"logging.file_path", "LOG_FILE_PATH"},
+	{"jwt.secret", "JWT_SECRET"},
+	{"jwt.access_expire_hours", "JWT_ACCESS_EXPIRE_HOURS"},
+	{"jwt.refresh_expire_days", "JWT_REFRESH_EXPIRE_DAYS"},
+	{"redis.host", "REDIS_HOST"},
+	{"redis.port", "REDIS_PORT"},
+	{"redis.password", "REDIS_PASSWORD"},
+	{"redis.db", "REDIS_DB"},
+}
 
-	// 从 YAML 文件加载配置
+// LoadConfig 加载配置。Viper 先读 YAML，再按 envBindings 用环境变量覆盖。
+func LoadConfig(configPath string) (*Config, error) {
+	v := viper.New()
+	v.SetConfigType("yaml")
+	// 空环境变量视为未设置，避免 REDIS_PASSWORD= 清掉文件里的密码。
+	v.AllowEmptyEnv(false)
+
+	for _, binding := range envBindings {
+		if err := v.BindEnv(binding.key, binding.env); err != nil {
+			return nil, fmt.Errorf("绑定环境变量 %s 失败: %w", binding.env, err)
+		}
+	}
+
 	if configPath != "" {
-		data, err := os.ReadFile(configPath)
-		if err != nil {
+		if _, err := os.Stat(configPath); err != nil {
 			return nil, fmt.Errorf("读取配置文件失败: %w", err)
 		}
-
-		if err := yaml.Unmarshal(data, config); err != nil {
+		v.SetConfigFile(configPath)
+		if err := v.ReadInConfig(); err != nil {
 			return nil, fmt.Errorf("解析配置文件失败: %w", err)
 		}
 	}
 
-	// 使用环境变量覆盖配置文件中的设置
-	config.overrideWithEnv()
-
-	return config, nil
-}
-
-// overrideWithEnv 使用环境变量覆盖配置 - 优先级：环境变量 > 配置文件
-func (c *Config) overrideWithEnv() {
-	if val := os.Getenv("APP_NAME"); val != "" {
-		c.App.Name = val
+	cfg := &Config{}
+	if err := v.Unmarshal(cfg); err != nil {
+		return nil, fmt.Errorf("解析配置失败: %w", err)
 	}
-	if val := os.Getenv("APP_PORT"); val != "" {
-		if port, err := strconv.Atoi(val); err == nil {
-			c.App.Port = port
-		}
-	}
-	if val := os.Getenv("APP_MODE"); val != "" {
-		c.App.Mode = val
-	}
-
-	// 数据库配置
-	if val := os.Getenv("DB_HOST"); val != "" {
-		c.Database.Host = val
-	}
-	if val := os.Getenv("DB_PORT"); val != "" {
-		if port, err := strconv.Atoi(val); err == nil {
-			c.Database.Port = port
-		}
-	}
-	if val := os.Getenv("DB_USER"); val != "" {
-		c.Database.User = val
-	}
-	if val := os.Getenv("DB_PASSWORD"); val != "" {
-		c.Database.Password = val
-	}
-	if val := os.Getenv("DB_NAME"); val != "" {
-		c.Database.DBName = val
-	}
-	if val := os.Getenv("DB_SSLMODE"); val != "" {
-		c.Database.SSLMode = val
-	}
-
-	// 日志配置
-	if val := os.Getenv("LOG_LEVEL"); val != "" {
-		c.Logging.Level = val
-	}
-	if val := os.Getenv("LOG_OUTPUT"); val != "" {
-		c.Logging.Output = val
-	}
-	if val := os.Getenv("LOG_FILE_PATH"); val != "" {
-		c.Logging.FilePath = val
-	}
-
-	// JWT 配置
-	if val := os.Getenv("JWT_SECRET"); val != "" {
-		c.JWT.Secret = val
-	}
-	// access token 过期时间
-	if val := os.Getenv("JWT_ACCESS_EXPIRE_HOURS"); val != "" {
-		if hours, err := strconv.Atoi(val); err == nil {
-			c.JWT.AccessExpireHours = hours
-		}
-	}
-	// refresh token 过期时间
-	if val := os.Getenv("JWT_REFRESH_EXPIRE_DAYS"); val != "" {
-		if days, err := strconv.Atoi(val); err == nil {
-			c.JWT.RefreshExpireDays = days
-		}
-	}
-
-	// Redis 配置
-	if val := os.Getenv("REDIS_HOST"); val != "" {
-		c.Redis.Host = val
-	}
-	if val := os.Getenv("REDIS_PORT"); val != "" {
-		if port, err := strconv.Atoi(val); err == nil {
-			c.Redis.Port = port
-		}
-	}
-	if val := os.Getenv("REDIS_PASSWORD"); val != "" {
-		c.Redis.Password = val
-	}
-	if val := os.Getenv("REDIS_DB"); val != "" {
-		if db, err := strconv.Atoi(val); err == nil {
-			c.Redis.DB = db
-		}
-	}
+	return cfg, nil
 }
 
 // GetDSN 获取数据库连接字符串 - 构建 PostgreSQL DSN 连接串
